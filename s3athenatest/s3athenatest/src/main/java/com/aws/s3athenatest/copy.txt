@@ -1,33 +1,30 @@
 public static List<String> topologicalSort(Map<String, List<String>> graph) {
-        // Calculate the indegree of each vertex
-        Map<String, Integer> indegree = new HashMap<>();
-        for (String vertex : graph.keySet()) {
-            indegree.put(vertex, 0);
-        }
-        for (String vertex : graph.keySet()) {
-            for (String neighbor : graph.get(vertex)) {
-                indegree.put(neighbor, indegree.getOrDefault(neighbor, 0) + 1);
-            }
-        }
+    // Calculate the indegree of each vertex
+    Map<String, Integer> indegree = new HashMap<>();
+    graph.values().stream()
+            .flatMap(Collection::stream)
+            .forEach(neighbor -> indegree.put(neighbor, indegree.getOrDefault(neighbor, 0) + 1));
 
-        // Perform topological sort
-        Queue<String> queue = new LinkedList<>();
-        for (String vertex : indegree.keySet()) {
-            if (indegree.get(vertex) == 0) {
-                queue.offer(vertex);
-            }
-        }
-        List<String> result = new ArrayList<>();
-        while (!queue.isEmpty()) {
-            String vertex = queue.poll();
-            result.add(vertex);
-            for (String neighbor : graph.get(vertex)) {
-                indegree.put(neighbor, indegree.get(neighbor) - 1);
-                if (indegree.get(neighbor) == 0) {
-                    queue.offer(neighbor);
-                }
-            }
-        }
+    graph.keySet().stream()
+            .filter(vertex -> !indegree.containsKey(vertex))
+            .forEach(vertex -> indegree.put(vertex, 0));
 
-        return result;
+    // Perform topological sort
+    Queue<String> queue = graph.keySet().stream()
+            .filter(vertex -> indegree.get(vertex) == 0)
+            .collect(Collectors.toCollection(LinkedList::new));
+    List<String> result = new ArrayList<>();
+    while (!queue.isEmpty()) {
+        String vertex = queue.poll();
+        result.add(vertex);
+        graph.get(vertex).stream()
+                .forEach(neighbor -> {
+                    indegree.compute(neighbor, (k, v) -> v - 1);
+                    if (indegree.get(neighbor) == 0) {
+                        queue.offer(neighbor);
+                    }
+                });
     }
+
+    return result;
+}
