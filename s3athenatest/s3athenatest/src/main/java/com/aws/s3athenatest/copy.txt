@@ -1,48 +1,32 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
-import java.util.stream.*;
 
-public class TopologicalSortStrings {
-    public static List<String> topologicalSort(Map<String, List<String>> graph) {
-        // Calculate the indegree of each vertex
-        Map<String, Integer> indegree = graph.keySet().stream()
-            .collect(Collectors.toMap(vertex -> vertex, vertex -> 0));
-        graph.values().stream()
-            .flatMap(Collection::stream)
-            .forEach(neighbor -> indegree.compute(neighbor, (k, v) -> v == null ? 1 : v + 1));
-
-        // Perform topological sort
-        Queue<String> queue = graph.keySet().stream()
-            .filter(vertex -> indegree.get(vertex) == 0)
-            .collect(Collectors.toCollection(LinkedList::new));
-        List<String> result = new ArrayList<>();
-        while (!queue.isEmpty()) {
-            String vertex = queue.poll();
-            result.add(vertex);
-            graph.get(vertex).stream()
-                .forEach(neighbor -> {
-                    indegree.compute(neighbor, (k, v) -> v - 1);
-                    if (indegree.get(neighbor) == 0) {
-                        queue.offer(neighbor);
-                    }
-                });
+public class CsvToGraph {
+    public static Map<String, List<String>> readCsv(String fileName, String delimiter) throws IOException {
+        Map<String, List<String>> graph = new HashMap<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            br.lines()
+                    .map(line -> line.split(delimiter))
+                    .filter(tokens -> tokens.length >= 2)
+                    .forEach(tokens -> {
+                        String parent = tokens[0].trim();
+                        String child = tokens[1].trim();
+                        graph.putIfAbsent(parent, new ArrayList<>());
+                        graph.get(parent).add(child);
+                    });
         }
-
-        return result;
+        return graph;
     }
 
     public static void main(String[] args) {
-        // Create a sample graph
-        Map<String, List<String>> graph = Map.of(
-            "A", Arrays.asList("B", "C"),
-            "B", Arrays.asList("D"),
-            "C", Arrays.asList("D", "E"),
-            "D", Arrays.asList("F"),
-            "E", Arrays.asList("F"),
-            "F", new ArrayList<>()
-        );
-
-        // Perform topological sort and print the result
-        List<String> result = topologicalSort(graph);
-        System.out.println(result); // Output: [A, C, B, E, D, F]
+        try {
+            // Read the CSV file and create a graph
+            Map<String, List<String>> graph = readCsv("input.csv", ",");
+            System.out.println(graph);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
