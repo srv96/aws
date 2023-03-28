@@ -1,32 +1,33 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.*;
-
-public class CsvToGraph {
-    public static Map<String, List<String>> readCsv(String fileName, String delimiter) throws IOException {
-        Map<String, List<String>> graph = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            br.lines()
-                    .map(line -> line.split(delimiter))
-                    .filter(tokens -> tokens.length >= 2)
-                    .forEach(tokens -> {
-                        String parent = tokens[0].trim();
-                        String child = tokens[1].trim();
-                        graph.putIfAbsent(parent, new ArrayList<>());
-                        graph.get(parent).add(child);
-                    });
+public static List<String> topologicalSort(Map<String, List<String>> graph) {
+        // Calculate the indegree of each vertex
+        Map<String, Integer> indegree = new HashMap<>();
+        for (String vertex : graph.keySet()) {
+            indegree.put(vertex, 0);
         }
-        return graph;
-    }
-
-    public static void main(String[] args) {
-        try {
-            // Read the CSV file and create a graph
-            Map<String, List<String>> graph = readCsv("input.csv", ",");
-            System.out.println(graph);
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (String vertex : graph.keySet()) {
+            for (String neighbor : graph.get(vertex)) {
+                indegree.put(neighbor, indegree.getOrDefault(neighbor, 0) + 1);
+            }
         }
+
+        // Perform topological sort
+        Queue<String> queue = new LinkedList<>();
+        for (String vertex : indegree.keySet()) {
+            if (indegree.get(vertex) == 0) {
+                queue.offer(vertex);
+            }
+        }
+        List<String> result = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            String vertex = queue.poll();
+            result.add(vertex);
+            for (String neighbor : graph.get(vertex)) {
+                indegree.put(neighbor, indegree.get(neighbor) - 1);
+                if (indegree.get(neighbor) == 0) {
+                    queue.offer(neighbor);
+                }
+            }
+        }
+
+        return result;
     }
-}
