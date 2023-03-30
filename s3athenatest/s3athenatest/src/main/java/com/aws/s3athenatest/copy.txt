@@ -1,73 +1,33 @@
-import com.amazonaws.services.athena.AmazonAthena;
-import com.amazonaws.services.athena.AmazonAthenaClientBuilder;
-import com.amazonaws.services.athena.model.*;
+import software.amazon.awssdk.services.athena.AthenaClient;
+import software.amazon.awssdk.services.athena.model.*;
+import software.amazon.awssdk.services.athena.paginators.QueryResultsIterable;
 
-public class AthenaQuery {
-    
+public class AthenaPaginatorExample {
+
     public static void main(String[] args) {
-        // Set up the Amazon Athena client
-        AmazonAthena athenaClient = AmazonAthenaClientBuilder.standard().build();
-        
-        // Set the query execution context
-        QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("your_database_name");
-        
-        // Set the query result configuration
-        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://your_bucket_name/your_output_folder/");
-        
-        // Set the query request
-        StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
-                .withQueryString("SELECT * FROM your_table_name;")
-                .withQueryExecutionContext(queryExecutionContext)
-                .withResultConfiguration(resultConfiguration);
-        
-        // Start the query execution
-        StartQueryExecutionResult startQueryExecutionResult = athenaClient.startQueryExecution(startQueryExecutionRequest);
-        String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
-        
-        // Wait for the query execution to complete
-        waitForQueryToComplete(athenaClient, queryExecutionId);
-        
-        // Set the query results request
-        GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
-                .withQueryExecutionId(queryExecutionId);
-        
-        // Get the query results
-        GetQueryResultsResult getQueryResultsResult = athenaClient.getQueryResults(getQueryResultsRequest);
-        List<Row> rows = getQueryResultsResult.getResultSet().getRows();
-        
-        // Print the query results
-        for (Row row : rows) {
-            List<Datum> data = row.getData();
-            for (Datum datum : data) {
-                System.out.print(datum.getVarCharValue() + "\t");
-            }
-            System.out.println();
-        }
-    }
-    
-    private static void waitForQueryToComplete(AmazonAthena athenaClient, String queryExecutionId) {
-        GetQueryExecutionRequest getQueryExecutionRequest = new GetQueryExecutionRequest()
-                .withQueryExecutionId(queryExecutionId);
-        GetQueryExecutionResult getQueryExecutionResult = null;
-        boolean isQueryStillRunning = true;
-        while (isQueryStillRunning) {
-            try {
-                getQueryExecutionResult = athenaClient.getQueryExecution(getQueryExecutionRequest);
-                String queryState = getQueryExecutionResult.getQueryExecution().getStatus().getState();
-                if (queryState.equals("SUCCEEDED") || queryState.equals("FAILED") || queryState.equals("CANCELLED")) {
-                    isQueryStillRunning = false;
+
+        AthenaClient client = AthenaClient.create();
+
+        String queryExecutionId = "abcd-1234-efgh-5678";
+
+        // Create a request to retrieve the query results
+        GetQueryResultsRequest getQueryResultsRequest = GetQueryResultsRequest.builder()
+                .queryExecutionId(queryExecutionId)
+                .build();
+
+        // Use the paginator to retrieve all query results
+        QueryResultsIterable queryResults = client.paginators().getQueryResultsIterable(getQueryResultsRequest);
+
+        // Iterate over the pages of query results
+        for (GetQueryResultsResponse page : queryResults) {
+            // Process each page of query results
+            for (Row row : page.resultSet().rows()) {
+                // Process each row of the result set
+                for (Datum datum : row.data()) {
+                    // Process each column in the row
+                    System.out.print(datum.varCharValue() + "\t");
                 }
-            } catch (InvalidRequestException e) {
-                if (e.getMessage().contains("Query execution not found")) {
-                    throw new RuntimeException("Query execution with ID " + queryExecutionId + " not found.", e);
-                } else {
-                    throw e;
-                }
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println();
             }
         }
     }
