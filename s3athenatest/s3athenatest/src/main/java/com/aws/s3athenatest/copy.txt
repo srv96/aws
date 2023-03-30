@@ -1,16 +1,22 @@
-public static Map<String, List<String>> readCsv(String fileName, String delimiter) throws IOException {
-        Map<String, List<String>> graph = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] tokens = line.split(delimiter);
-                if (tokens.length >= 2) {
-                    String parent = tokens[0].trim();
-                    String child = tokens[1].trim();
-                    graph.putIfAbsent(parent, new ArrayList<>());
-                    graph.get(parent).add(child);
-                }
-            }
-        }
-        return graph;
-    }
+// Create a new AthenaClient object
+AthenaClient client = AthenaClient.builder()
+    .region(Region.US_WEST_2)
+    .build();
+
+// Set the query string and execution configuration
+String query = "SELECT * FROM my_table";
+QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder().build();
+ResultConfiguration resultConfiguration = ResultConfiguration.builder().build();
+
+// Create the QueryRequest object with the query and configuration
+QueryRequest queryRequest = QueryRequest.builder()
+    .queryString(query)
+    .queryExecutionContext(queryExecutionContext)
+    .resultConfiguration(resultConfiguration)
+    .build();
+
+// Use the QueryPaginator to execute the query and fetch all results
+QueryPaginator queryPaginator = client.queryPaginator(queryRequest);
+queryPaginator.stream()
+    .flatMap(p -> p.resultSet().stream())
+    .forEach(System.out::println);
