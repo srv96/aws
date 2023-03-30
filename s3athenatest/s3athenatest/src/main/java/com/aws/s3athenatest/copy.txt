@@ -1,22 +1,36 @@
-// Create a new AthenaClient object
-AthenaClient client = AthenaClient.builder()
-    .region(Region.US_WEST_2)
-    .build();
+AmazonAthena client = AmazonAthenaClientBuilder.standard()
+                .withRegion(Regions.US_EAST_1)
+                .build();
+String queryExecutionId = startQueryExecution(client, "SELECT * FROM my_table");
+getQueryResults(client, queryExecutionId);
 
-// Set the query string and execution configuration
-String query = "SELECT * FROM my_table";
-QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder().build();
-ResultConfiguration resultConfiguration = ResultConfiguration.builder().build();
+private static String startQueryExecution(AmazonAthena client, String query) {
+    StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
+            .withQueryString(query)
+            .withResultConfiguration(new ResultConfiguration()
+                    .withOutputLocation("s3://my-bucket/my-folder/"));
+    StartQueryExecutionResult startQueryExecutionResult = client.startQueryExecution(startQueryExecutionRequest);
+    return startQueryExecutionResult.getQueryExecutionId();
+}
 
-// Create the QueryRequest object with the query and configuration
-QueryRequest queryRequest = QueryRequest.builder()
-    .queryString(query)
-    .queryExecutionContext(queryExecutionContext)
-    .resultConfiguration(resultConfiguration)
-    .build();
+private static void getQueryResults(AmazonAthena client, String queryExecutionId) {
+    GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
+            .withQueryExecutionId(queryExecutionId);
 
-// Use the QueryPaginator to execute the query and fetch all results
-QueryPaginator queryPaginator = client.queryPaginator(queryRequest);
-queryPaginator.stream()
-    .flatMap(p -> p.resultSet().stream())
-    .forEach(System.out::println);
+    boolean isFirstResult = true;
+    String nextToken = null;
+
+    do {
+        if (!isFirstResult) {
+            getQueryResultsRequest.setNextToken(nextToken);
+        }
+
+        GetQueryResultsResult getQueryResultsResult = client.getQueryResults(getQueryResultsRequest);
+        List<Row> rows = getQueryResultsResult.getResultSet().getRows();
+
+        // Process the rows here...
+
+        nextToken = getQueryResultsResult.getNextToken();
+        isFirstResult = false;
+    } while (nextToken != null);
+}
