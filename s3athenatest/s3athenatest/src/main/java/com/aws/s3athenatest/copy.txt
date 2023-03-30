@@ -24,24 +24,8 @@ public class AthenaQuery {
         StartQueryExecutionResult startQueryExecutionResult = athenaClient.startQueryExecution(startQueryExecutionRequest);
         String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
         
-        // Set the query execution request
-        GetQueryExecutionRequest getQueryExecutionRequest = new GetQueryExecutionRequest()
-                .withQueryExecutionId(queryExecutionId);
-        
-        // Get the query execution
-        GetQueryExecutionResult getQueryExecutionResult = null;
-        while(true) {
-            getQueryExecutionResult = athenaClient.getQueryExecution(getQueryExecutionRequest);
-            String queryState = getQueryExecutionResult.getQueryExecution().getStatus().getState();
-            if (queryState.equals("FAILED") || queryState.equals("SUCCEEDED") || queryState.equals("CANCELLED")) {
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        // Wait for the query execution to complete
+        waitForQueryToComplete(athenaClient, queryExecutionId);
         
         // Set the query results request
         GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
@@ -60,5 +44,31 @@ public class AthenaQuery {
             System.out.println();
         }
     }
+    
+    private static void waitForQueryToComplete(AmazonAthena athenaClient, String queryExecutionId) {
+        GetQueryExecutionRequest getQueryExecutionRequest = new GetQueryExecutionRequest()
+                .withQueryExecutionId(queryExecutionId);
+        GetQueryExecutionResult getQueryExecutionResult = null;
+        boolean isQueryStillRunning = true;
+        while (isQueryStillRunning) {
+            try {
+                getQueryExecutionResult = athenaClient.getQueryExecution(getQueryExecutionRequest);
+                String queryState = getQueryExecutionResult.getQueryExecution().getStatus().getState();
+                if (queryState.equals("SUCCEEDED") || queryState.equals("FAILED") || queryState.equals("CANCELLED")) {
+                    isQueryStillRunning = false;
+                }
+            } catch (InvalidRequestException e) {
+                if (e.getMessage().contains("Query execution not found")) {
+                    throw new RuntimeException("Query execution with ID " + queryExecutionId + " not found.", e);
+                } else {
+                    throw e;
+                }
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
-
