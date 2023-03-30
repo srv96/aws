@@ -1,36 +1,64 @@
-AmazonAthena client = AmazonAthenaClientBuilder.standard()
-                .withRegion(Regions.US_EAST_1)
-                .build();
-String queryExecutionId = startQueryExecution(client, "SELECT * FROM my_table");
-getQueryResults(client, queryExecutionId);
+import com.amazonaws.services.athena.AmazonAthena;
+import com.amazonaws.services.athena.AmazonAthenaClientBuilder;
+import com.amazonaws.services.athena.model.*;
 
-private static String startQueryExecution(AmazonAthena client, String query) {
-    StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
-            .withQueryString(query)
-            .withResultConfiguration(new ResultConfiguration()
-                    .withOutputLocation("s3://my-bucket/my-folder/"));
-    StartQueryExecutionResult startQueryExecutionResult = client.startQueryExecution(startQueryExecutionRequest);
-    return startQueryExecutionResult.getQueryExecutionId();
-}
-
-private static void getQueryResults(AmazonAthena client, String queryExecutionId) {
-    GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
-            .withQueryExecutionId(queryExecutionId);
-
-    boolean isFirstResult = true;
-    String nextToken = null;
-
-    do {
-        if (!isFirstResult) {
-            getQueryResultsRequest.setNextToken(nextToken);
+public class AthenaQuery {
+    
+    public static void main(String[] args) {
+        // Set up the Amazon Athena client
+        AmazonAthena athenaClient = AmazonAthenaClientBuilder.standard().build();
+        
+        // Set the query execution context
+        QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("your_database_name");
+        
+        // Set the query result configuration
+        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://your_bucket_name/your_output_folder/");
+        
+        // Set the query request
+        StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
+                .withQueryString("SELECT * FROM your_table_name;")
+                .withQueryExecutionContext(queryExecutionContext)
+                .withResultConfiguration(resultConfiguration);
+        
+        // Start the query execution
+        StartQueryExecutionResult startQueryExecutionResult = athenaClient.startQueryExecution(startQueryExecutionRequest);
+        String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
+        
+        // Set the query execution request
+        GetQueryExecutionRequest getQueryExecutionRequest = new GetQueryExecutionRequest()
+                .withQueryExecutionId(queryExecutionId);
+        
+        // Get the query execution
+        GetQueryExecutionResult getQueryExecutionResult = null;
+        while(true) {
+            getQueryExecutionResult = athenaClient.getQueryExecution(getQueryExecutionRequest);
+            String queryState = getQueryExecutionResult.getQueryExecution().getStatus().getState();
+            if (queryState.equals("FAILED") || queryState.equals("SUCCEEDED") || queryState.equals("CANCELLED")) {
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
-        GetQueryResultsResult getQueryResultsResult = client.getQueryResults(getQueryResultsRequest);
+        
+        // Set the query results request
+        GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
+                .withQueryExecutionId(queryExecutionId);
+        
+        // Get the query results
+        GetQueryResultsResult getQueryResultsResult = athenaClient.getQueryResults(getQueryResultsRequest);
         List<Row> rows = getQueryResultsResult.getResultSet().getRows();
-
-        // Process the rows here...
-
-        nextToken = getQueryResultsResult.getNextToken();
-        isFirstResult = false;
-    } while (nextToken != null);
+        
+        // Print the query results
+        for (Row row : rows) {
+            List<Datum> data = row.getData();
+            for (Datum datum : data) {
+                System.out.print(datum.getVarCharValue() + "\t");
+            }
+            System.out.println();
+        }
+    }
 }
+
