@@ -1,1 +1,1 @@
-netstat -ano | findstr :8080 | findstr /C: "TCP" | findstr /R /C:"[[:space:]]*[[:digit:]]*$"
+netstat -ano | findstr ":8080" | findstr "LISTENING" | findstr /R /C:"[[:digit:]]\+$"
