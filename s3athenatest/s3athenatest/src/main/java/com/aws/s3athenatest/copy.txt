@@ -1,32 +1,38 @@
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
 
-public class AthenaJdbcExample {
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+
+public class AthenaPreparedStatementExample {
+
+    private static final String ATHENA_URL = "jdbc:awsathena://athena.us-east-1.amazonaws.com:443";
+    private static final String DATABASE = "mydatabase";
+    private static final String TABLE = "mytable";
 
     public static void main(String[] args) {
 
-        // Set up the JDBC URL and properties for the Athena connection
-        String jdbcUrl = "jdbc:awsathena://athena.{REGION}.amazonaws.com:443";
-        Properties properties = new Properties();
-        properties.setProperty("aws_credentials_provider_class", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
-        properties.setProperty("s3_staging_dir", "s3://{BUCKET_NAME}/athena/");
-        properties.setProperty("region_name", "{REGION}");
+        // Set up the credentials provider
+        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
 
-        // Create the Athena JDBC driver and establish a connection
-        try (Connection conn = DriverManager.getConnection(jdbcUrl, properties)) {
+        try (Connection conn = DriverManager.getConnection(ATHENA_URL, credentialsProvider)) {
 
-            // Create a statement and execute a query
-            try (Statement statement = conn.createStatement()) {
-                String query = "SELECT * FROM mydatabase.mytable";
-                try (ResultSet resultSet = statement.executeQuery(query)) {
+            // Create a prepared statement to retrieve data from Athena
+            String selectSql = "SELECT * FROM \"" + DATABASE + "\".\"" + TABLE + "\" WHERE column1 = ?";
+            try (PreparedStatement selectStatement = conn.prepareStatement(selectSql)) {
+
+                // Set the value of the parameter in the prepared statement
+                selectStatement.setString(1, "value1");
+
+                // Execute the query and retrieve the results
+                try (ResultSet resultSet = selectStatement.executeQuery()) {
                     while (resultSet.next()) {
-                        String column1Value = resultSet.getString("column1");
-                        int column2Value = resultSet.getInt("column2");
-                        System.out.println("column1 = " + column1Value + ", column2 = " + column2Value);
+                        String column2Value = resultSet.getString("column2");
+                        int column3Value = resultSet.getInt("column3");
+                        System.out.println("column2 = " + column2Value + ", column3 = " + column3Value);
                     }
                 }
             }
