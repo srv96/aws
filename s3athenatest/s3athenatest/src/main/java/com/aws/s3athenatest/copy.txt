@@ -1,41 +1,64 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-public class CSVToListMap {
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class PreparedStatementExample {
+
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/mydatabase";
+    private static final String USER = "myuser";
+    private static final String PASS = "mypassword";
+
     public static void main(String[] args) {
-        String filePath = "path/to/your/csv/file.csv";
-        String delimiter = ","; // or any other delimiter used in your CSV file
 
-        // Create a List to hold the Map objects
-        List<Map<String, String>> dataList = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
 
-        // Create a BufferedReader to read the CSV data
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            // Read the header row of the CSV file to get the column names
-            String headerRow = reader.readLine();
-            String[] columnNames = headerRow.split(delimiter);
-
-            // Read the remaining rows of the CSV file and create a Map object for each row
-            String dataRow;
-            while ((dataRow = reader.readLine()) != null) {
-                String[] dataValues = dataRow.split(delimiter);
-                Map<String, String> dataMap = new HashMap<>();
-                for (int i = 0; i < columnNames.length; i++) {
-                    dataMap.put(columnNames[i], dataValues[i]);
-                }
-                dataList.add(dataMap);
+            // Insert data into the database using a prepared statement
+            String insertSql = "INSERT INTO mytable (column1, column2, column3) VALUES (?, ?, ?)";
+            try (PreparedStatement insertStatement = conn.prepareStatement(insertSql)) {
+                insertStatement.setString(1, "value1");
+                insertStatement.setString(2, "value2");
+                insertStatement.setInt(3, 123);
+                int rowsInserted = insertStatement.executeUpdate();
+                System.out.println("Rows inserted: " + rowsInserted);
             }
-        } catch (IOException e) {
+
+            // Update data in the database using a prepared statement
+            String updateSql = "UPDATE mytable SET column1 = ? WHERE column2 = ?";
+            try (PreparedStatement updateStatement = conn.prepareStatement(updateSql)) {
+                updateStatement.setString(1, "new value");
+                updateStatement.setString(2, "value2");
+                int rowsUpdated = updateStatement.executeUpdate();
+                System.out.println("Rows updated: " + rowsUpdated);
+            }
+
+            // Delete data from the database using a prepared statement
+            String deleteSql = "DELETE FROM mytable WHERE column3 = ?";
+            try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+                deleteStatement.setInt(1, 123);
+                int rowsDeleted = deleteStatement.executeUpdate();
+                System.out.println("Rows deleted: " + rowsDeleted);
+            }
+
+            // Retrieve data from the database using a prepared statement
+            String selectSql = "SELECT * FROM mytable WHERE column2 = ?";
+            try (PreparedStatement selectStatement = conn.prepareStatement(selectSql)) {
+                selectStatement.setString(1, "value2");
+                try (ResultSet resultSet = selectStatement.executeQuery()) {
+                    while (resultSet.next()) {
+                        String column1Value = resultSet.getString("column1");
+                        int column3Value = resultSet.getInt("column3");
+                        System.out.println("column1 = " + column1Value + ", column3 = " + column3Value);
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        // Print the List of Map objects
-        System.out.println(dataList);
     }
-}
 
+}
