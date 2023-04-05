@@ -1,56 +1,32 @@
-
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
 
-public class PreparedStatementExample {
-
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/mydatabase";
-    private static final String USER = "myuser";
-    private static final String PASS = "mypassword";
+public class AthenaJdbcExample {
 
     public static void main(String[] args) {
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+        // Set up the JDBC URL and properties for the Athena connection
+        String jdbcUrl = "jdbc:awsathena://athena.{REGION}.amazonaws.com:443";
+        Properties properties = new Properties();
+        properties.setProperty("aws_credentials_provider_class", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain");
+        properties.setProperty("s3_staging_dir", "s3://{BUCKET_NAME}/athena/");
+        properties.setProperty("region_name", "{REGION}");
 
-            // Insert data into the database using a prepared statement
-            String insertSql = "INSERT INTO mytable (column1, column2, column3) VALUES (?, ?, ?)";
-            try (PreparedStatement insertStatement = conn.prepareStatement(insertSql)) {
-                insertStatement.setString(1, "value1");
-                insertStatement.setString(2, "value2");
-                insertStatement.setInt(3, 123);
-                int rowsInserted = insertStatement.executeUpdate();
-                System.out.println("Rows inserted: " + rowsInserted);
-            }
+        // Create the Athena JDBC driver and establish a connection
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, properties)) {
 
-            // Update data in the database using a prepared statement
-            String updateSql = "UPDATE mytable SET column1 = ? WHERE column2 = ?";
-            try (PreparedStatement updateStatement = conn.prepareStatement(updateSql)) {
-                updateStatement.setString(1, "new value");
-                updateStatement.setString(2, "value2");
-                int rowsUpdated = updateStatement.executeUpdate();
-                System.out.println("Rows updated: " + rowsUpdated);
-            }
-
-            // Delete data from the database using a prepared statement
-            String deleteSql = "DELETE FROM mytable WHERE column3 = ?";
-            try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
-                deleteStatement.setInt(1, 123);
-                int rowsDeleted = deleteStatement.executeUpdate();
-                System.out.println("Rows deleted: " + rowsDeleted);
-            }
-
-            // Retrieve data from the database using a prepared statement
-            String selectSql = "SELECT * FROM mytable WHERE column2 = ?";
-            try (PreparedStatement selectStatement = conn.prepareStatement(selectSql)) {
-                selectStatement.setString(1, "value2");
-                try (ResultSet resultSet = selectStatement.executeQuery()) {
+            // Create a statement and execute a query
+            try (Statement statement = conn.createStatement()) {
+                String query = "SELECT * FROM mydatabase.mytable";
+                try (ResultSet resultSet = statement.executeQuery(query)) {
                     while (resultSet.next()) {
                         String column1Value = resultSet.getString("column1");
-                        int column3Value = resultSet.getInt("column3");
-                        System.out.println("column1 = " + column1Value + ", column3 = " + column3Value);
+                        int column2Value = resultSet.getInt("column2");
+                        System.out.println("column1 = " + column1Value + ", column2 = " + column2Value);
                     }
                 }
             }
