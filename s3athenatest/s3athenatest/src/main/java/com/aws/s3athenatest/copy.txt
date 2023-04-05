@@ -1,69 +1,27 @@
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.PartETag;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
-import com.amazonaws.services.s3.transfer.TransferProgress;
-import com.amazonaws.services.s3.transfer.Download;
-import com.amazonaws.services.s3.transfer.model.DownloadResult;
-
-public class S3CSVToListMapMultipart {
+public class CSVToListMap {
     public static void main(String[] args) {
-        String bucketName = "your-bucket-name";
-        String key = "your-csv-file-key";
+        String filePath = "path/to/your/csv/file.csv";
         String delimiter = ","; // or any other delimiter used in your CSV file
-
-        // Create an AmazonS3 client and TransferManager
-        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
-        TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3Client).build();
-
-        // Get the S3Object containing the CSV file using TransferManager
-        GetObjectRequest getObjectRequest = new GetObjectRequest(bucketName, key);
-        Download download = transferManager.download(getObjectRequest);
-
-        // Wait for the download to complete
-        try {
-            download.waitForCompletion();
-        } catch (InterruptedException e1) {
-            e1.printStackTrace();
-            return;
-        }
-
-        // Get the result of the download
-        DownloadResult downloadResult = download.waitForCompletion();
-
-        // Get the S3Object containing the CSV file from the download result
-        S3Object s3Object = downloadResult.getGetObjectResponse().getObject();
-
-        // Create a BufferedReader to read the CSV data from the S3Object
-        BufferedReader reader = new BufferedReader(new InputStreamReader(s3Object.getObjectContent()));
-
-        // Read the header row of the CSV file to get the column names
-        String headerRow;
-        try {
-            headerRow = reader.readLine();
-        } catch (IOException e1) {
-            e1.printStackTrace();
-            return;
-        }
-        String[] columnNames = headerRow.split(delimiter);
 
         // Create a List to hold the Map objects
         List<Map<String, String>> dataList = new ArrayList<>();
 
-        // Read the remaining rows of the CSV file and create a Map object for each row
-        String dataRow;
-        try {
+        // Create a BufferedReader to read the CSV data
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            // Read the header row of the CSV file to get the column names
+            String headerRow = reader.readLine();
+            String[] columnNames = headerRow.split(delimiter);
+
+            // Read the remaining rows of the CSV file and create a Map object for each row
+            String dataRow;
             while ((dataRow = reader.readLine()) != null) {
                 String[] dataValues = dataRow.split(delimiter);
                 Map<String, String> dataMap = new HashMap<>();
@@ -74,21 +32,10 @@ public class S3CSVToListMapMultipart {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return;
         }
-
-        // Close the reader and the S3Object
-        try {
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        s3Object.close();
 
         // Print the List of Map objects
         System.out.println(dataList);
-
-        // Shutdown the TransferManager
-        transferManager.shutdownNow();
     }
 }
+
