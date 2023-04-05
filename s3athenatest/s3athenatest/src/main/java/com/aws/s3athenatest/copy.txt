@@ -1,1 +1,58 @@
-netstat -ano | findstr ":8080" | findstr "LISTENING" | findstr /R /C:"[[:digit:]]\+$"
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+
+public class S3CSVToListMap {
+    public static void main(String[] args) {
+        String bucketName = "your-bucket-name";
+        String key = "your-csv-file-key";
+        String delimiter = ","; // or any other delimiter used in your CSV file
+
+        // Create an AmazonS3 client
+        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+
+        // Get the S3Object containing the CSV file
+        S3Object s3Object = s3Client.getObject(new GetObjectRequest(bucketName, key));
+
+        // Create a BufferedReader to read the CSV data from the S3Object
+        BufferedReader reader = new BufferedReader(new InputStreamReader(s3Object.getObjectContent()));
+
+        // Read the header row of the CSV file to get the column names
+        String headerRow = reader.readLine();
+        String[] columnNames = headerRow.split(delimiter);
+
+        // Create a List to hold the Map objects
+        List<Map<String, String>> dataList = new ArrayList<>();
+
+        // Read the remaining rows of the CSV file and create a Map object for each row
+        String dataRow;
+        while ((dataRow = reader.readLine()) != null) {
+            String[] dataValues = dataRow.split(delimiter);
+            Map<String, String> dataMap = new HashMap<>();
+            for (int i = 0; i < columnNames.length; i++) {
+                dataMap.put(columnNames[i], dataValues[i]);
+            }
+            dataList.add(dataMap);
+        }
+
+        // Close the reader and the S3Object
+        try {
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        s3Object.close();
+
+        // Print the List of Map objects
+        System.out.println(dataList);
+    }
+}
