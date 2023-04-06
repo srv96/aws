@@ -1,46 +1,58 @@
+import java.sql.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+public class AthenaQueryExample {
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+    public static void main(String[] args) throws SQLException {
+        String url = "jdbc:awsathena://athena.{REGION}.amazonaws.com:443/";
+        String user = "aws";
+        String password = "";
+        String query = "SELECT * FROM mydatabase.mytable LIMIT 10;";
 
-public class AthenaPreparedStatementExample {
+        String profileName = "default";
+        String proxyHost = "YOUR_PROXY_HOST";
+        int proxyPort = 8080;
+        String proxyUser = "YOUR_PROXY_USER";
+        String proxyPassword = "YOUR_PROXY_PASSWORD";
 
-    private static final String ATHENA_URL = "jdbc:awsathena://athena.us-east-1.amazonaws.com:443";
-    private static final String DATABASE = "mydatabase";
-    private static final String TABLE = "mytable";
+        // Set the AWS SDK credentials provider
+        com.amazonaws.auth.profile.ProfileCredentialsProvider credentialsProvider =
+                new com.amazonaws.auth.profile.ProfileCredentialsProvider(profileName);
 
-    public static void main(String[] args) {
+        // Set the AWS SDK client configuration
+        com.amazonaws.ClientConfiguration clientConfiguration = new com.amazonaws.ClientConfiguration();
+        clientConfiguration.setProxyHost(proxyHost);
+        clientConfiguration.setProxyPort(proxyPort);
+        clientConfiguration.setProxyUsername(proxyUser);
+        clientConfiguration.setProxyPassword(proxyPassword);
 
-        // Set up the credentials provider
-        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+        // Create the JDBC connection
+        java.util.Properties properties = new java.util.Properties();
+        properties.put("user", user);
+        properties.put("password", password);
+        properties.put("aws_credentials_provider_class",
+                "com.amazonaws.auth.profile.ProfileCredentialsProvider");
+        properties.put("aws_credentials_provider_arguments",
+                profileName);
+        properties.put("s3_staging_dir", "s3://mybucket/myfolder/");
+        properties.put("aws_client_configuration_class",
+                "com.amazonaws.ClientConfiguration");
+        properties.put("aws_client_configuration_arguments",
+                clientConfiguration);
 
-        try (Connection conn = DriverManager.getConnection(ATHENA_URL, credentialsProvider)) {
+        Connection connection = DriverManager.getConnection(url, properties);
 
-            // Create a prepared statement to retrieve data from Athena
-            String selectSql = "SELECT * FROM \"" + DATABASE + "\".\"" + TABLE + "\" WHERE column1 = ?";
-            try (PreparedStatement selectStatement = conn.prepareStatement(selectSql)) {
+        // Execute the query
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(query);
 
-                // Set the value of the parameter in the prepared statement
-                selectStatement.setString(1, "value1");
-
-                // Execute the query and retrieve the results
-                try (ResultSet resultSet = selectStatement.executeQuery()) {
-                    while (resultSet.next()) {
-                        String column2Value = resultSet.getString("column2");
-                        int column3Value = resultSet.getInt("column3");
-                        System.out.println("column2 = " + column2Value + ", column3 = " + column3Value);
-                    }
-                }
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
+        // Process the results
+        while (resultSet.next()) {
+            System.out.println(resultSet.getString(1) + ", " + resultSet.getString(2));
         }
 
+        // Close the connection
+        resultSet.close();
+        statement.close();
+        connection.close();
     }
-
 }
