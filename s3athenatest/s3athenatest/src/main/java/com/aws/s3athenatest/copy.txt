@@ -1,153 +1,19 @@
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.athena.AmazonAthena;
-import com.amazonaws.services.athena.model.*;
-
-import java.util.Collections;
-
-public class AthenaCRUDExample {
-
-    private final AmazonAthena athenaClient;
-
-    public AthenaCRUDExample(AmazonAthena athenaClient) {
-        this.athenaClient = athenaClient;
-    }
-
-    public void createTable() {
-        String tableName = "my_table";
-        String createTableQuery = "CREATE TABLE " + tableName + " (id INT, name STRING)";
-
-        runQuery(createTableQuery);
-    }
-
-    public void insertRow(int id, String name) {
-        String tableName = "my_table";
-        String insertRowQuery = "INSERT INTO " + tableName + " VALUES (?, ?)";
-
-        PreparedStatementInput input = PreparedStatementInput.builder()
-                .queryString(insertRowQuery)
-                .build();
-
-        QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
-                .database("my_database")
-                .build();
-
-        ResultConfiguration resultConfiguration = ResultConfiguration.builder()
-                .outputLocation("s3://my-bucket/my-prefix/")
-                .build();
-
-        StartQueryExecutionRequest request = StartQueryExecutionRequest.builder()
-                .queryExecutionContext(queryExecutionContext)
-                .resultConfiguration(resultConfiguration)
-                .workGroup("my-workgroup")
-                .parameters(Collections.singletonMap("id", String.valueOf(id)))
-                .parameters(Collections.singletonMap("name", name))
-                .build();
-
-        runQuery(request);
-    }
-
-    public void updateRow(int id, String newName) {
-        String tableName = "my_table";
-        String updateRowQuery = "UPDATE " + tableName + " SET name = ? WHERE id = ?";
-
-        PreparedStatementInput input = PreparedStatementInput.builder()
-                .queryString(updateRowQuery)
-                .build();
-
-        QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
-                .database("my_database")
-                .build();
-
-        ResultConfiguration resultConfiguration = ResultConfiguration.builder()
-                .outputLocation("s3://my-bucket/my-prefix/")
-                .build();
-
-        StartQueryExecutionRequest request = StartQueryExecutionRequest.builder()
-                .queryExecutionContext(queryExecutionContext)
-                .resultConfiguration(resultConfiguration)
-                .workGroup("my-workgroup")
-                .parameters(Collections.singletonMap("name", newName))
-                .parameters(Collections.singletonMap("id", String.valueOf(id)))
-                .build();
-
-        runQuery(request);
-    }
-
-    public void deleteRow(int id) {
-        String tableName = "my_table";
-        String deleteRowQuery = "DELETE FROM " + tableName + " WHERE id = ?";
-
-        PreparedStatementInput input = PreparedStatementInput.builder()
-                .queryString(deleteRowQuery)
-                .build();
-
-        QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
-                .database("my_database")
-                .build();
-
-        ResultConfiguration resultConfiguration = ResultConfiguration.builder()
-                .outputLocation("s3://my-bucket/my-prefix/")
-                .build();
-
-        StartQueryExecutionRequest request = StartQueryExecutionRequest.builder()
-                .queryExecutionContext(queryExecutionContext)
-                .resultConfiguration(resultConfiguration)
-                .workGroup("my-workgroup")
-                .parameters(Collections.singletonMap("id", String.valueOf(id)))
-                .build();
-
-        runQuery(request);
-    }
-
-    public void readTable() {
-        String tableName = "my_table";
-        String readTableQuery = "SELECT * FROM " + tableName;
-
-        runQuery(readTableQuery);
-    }
-
-    private void runQuery(String query) {
-        StartQueryExecutionRequest request = StartQueryExecutionRequest.builder()
-            .queryString(query)
-            .queryExecutionContext(QueryExecutionContext.builder()
-                    .database("my_database")
-                    .build())
-            .resultConfiguration(ResultConfiguration.builder()
-                    .outputLocation("s3://my-bucket/my-prefix/")
-                    .build())
-            .workGroup("my-workgroup")
-            .build();
-
-    runQuery(request);
-}
-
-private void runQuery(StartQueryExecutionRequest request) {
-    try {
-        StartQueryExecutionResult startQueryExecutionResult = athenaClient.startQueryExecution(request);
-        String queryExecutionId = startQueryExecutionResult.queryExecutionId();
-
-        GetQueryExecutionRequest getQueryExecutionRequest = GetQueryExecutionRequest.builder()
-                .queryExecutionId(queryExecutionId)
-                .build();
-
-        QueryExecution queryExecution = null;
-
-        do {
-            GetQueryExecutionResult getQueryExecutionResult = athenaClient.getQueryExecution(getQueryExecutionRequest);
-            queryExecution = getQueryExecutionResult.queryExecution();
-            Thread.sleep(1000);
-        } while (!queryExecution.status().state().isDone());
-
-        GetQueryResultsRequest getQueryResultsRequest = GetQueryResultsRequest.builder()
-                .queryExecutionId(queryExecutionId)
-                .build();
-
-        GetQueryResultsResult getQueryResultsResult = athenaClient.getQueryResults(getQueryResultsRequest);
-        System.out.println(getQueryResultsResult.toString());
-    } catch (InterruptedException e) {
-        e.printStackTrace();
-    } catch (InvalidRequestException e) {
-        e.printStackTrace();
-    } catch (AmazonAthenaException e) {
-        e.printStackTrace();
-    }
-}
+import com.amazonaws.services.athena.AmazonAthenaClientBuilder;
+import com.amazonaws.services.athena.model.GetQueryExecutionRequest;
+import com.amazonaws.services.athena.model.GetQueryExecutionResult;
+import com.amazonaws.services.athena.model.GetQueryResultsRequest;
+import com.amazonaws.services.athena.model.GetQueryResultsResult;
+import com.amazonaws.services.athena.model.InvalidRequestException;
+import com.amazonaws.services.athena.model.QueryExecutionContext;
+import com.amazonaws.services.athena.model.QueryExecution;
+import com.amazonaws.services.athena.model.ResultConfiguration;
+import com.amazonaws.services.athena.model.StartQueryExecutionRequest;
+import com.amazonaws.services.athena.model.StartQueryExecutionResult;
+import com.amazonaws.services.athena.model.StopQueryExecutionRequest;
+import com.amazonaws.services.athena.model.StopQueryExecutionResult;
+import com.amazonaws.services.athena.model.UpdatePreparedStatementRequest;
+import com.amazonaws.services.athena.model.UpdatePreparedStatementResult;
+import com.amazonaws.services.athena.waiters.AmazonAthenaWaiters;
+import com.amazonaws.waiters.WaiterParameters;
