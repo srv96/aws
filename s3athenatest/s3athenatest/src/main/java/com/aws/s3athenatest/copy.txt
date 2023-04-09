@@ -1,58 +1,66 @@
-import java.sql.*;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.athena.AthenaClient;
+import software.amazon.awssdk.services.athena.model.*;
 
-public class AthenaQueryExample {
+public class AthenaPreparedStatementExample {
 
-    public static void main(String[] args) throws SQLException {
-        String url = "jdbc:awsathena://athena.{REGION}.amazonaws.com:443/";
-        String user = "aws";
-        String password = "";
-        String query = "SELECT * FROM mydatabase.mytable LIMIT 10;";
+    public static void main(String[] args) {
+        AthenaClient client = AthenaClient.builder()
+                .region(Region.US_EAST_1)
+                .build();
 
-        String profileName = "default";
-        String proxyHost = "YOUR_PROXY_HOST";
-        int proxyPort = 8080;
-        String proxyUser = "YOUR_PROXY_USER";
-        String proxyPassword = "YOUR_PROXY_PASSWORD";
+        String query = "SELECT * FROM my_table WHERE column1 = ? AND column2 = ?";
 
-        // Set the AWS SDK credentials provider
-        com.amazonaws.auth.profile.ProfileCredentialsProvider credentialsProvider =
-                new com.amazonaws.auth.profile.ProfileCredentialsProvider(profileName);
+        PreparedStatementInput input = PreparedStatementInput.builder()
+                .queryString(query)
+                .build();
 
-        // Set the AWS SDK client configuration
-        com.amazonaws.ClientConfiguration clientConfiguration = new com.amazonaws.ClientConfiguration();
-        clientConfiguration.setProxyHost(proxyHost);
-        clientConfiguration.setProxyPort(proxyPort);
-        clientConfiguration.setProxyUsername(proxyUser);
-        clientConfiguration.setProxyPassword(proxyPassword);
+        StartQueryExecutionRequest request = StartQueryExecutionRequest.builder()
+                .queryExecutionContext(QueryExecutionContext.builder().database("my_database").build())
+                .resultConfiguration(ResultConfiguration.builder().outputLocation("s3://my-bucket/my-prefix/").build())
+                .workGroup("my-workgroup")
+                .parameters(ParameterMap.builder()
+                        .put("param1", "value1")
+                        .put("param2", "value2")
+                        .build())
+                .build();
 
-        // Create the JDBC connection
-        java.util.Properties properties = new java.util.Properties();
-        properties.put("user", user);
-        properties.put("password", password);
-        properties.put("aws_credentials_provider_class",
-                "com.amazonaws.auth.profile.ProfileCredentialsProvider");
-        properties.put("aws_credentials_provider_arguments",
-                profileName);
-        properties.put("s3_staging_dir", "s3://mybucket/myfolder/");
-        properties.put("aws_client_configuration_class",
-                "com.amazonaws.ClientConfiguration");
-        properties.put("aws_client_configuration_arguments",
-                clientConfiguration);
+        try {
+            StartQueryExecutionResponse response = client.startQueryExecution(request);
+            String queryExecutionId = response.queryExecutionId();
 
-        Connection connection = DriverManager.getConnection(url, properties);
+            GetQueryExecutionRequest getQueryExecutionRequest = GetQueryExecutionRequest.builder()
+                    .queryExecutionId(queryExecutionId)
+                    .build();
 
-        // Execute the query
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery(query);
+            QueryExecution execution = null;
+            while (true) {
+                GetQueryExecutionResponse getQueryExecutionResponse = client.getQueryExecution(getQueryExecutionRequest);
+                execution = getQueryExecutionResponse.queryExecution();
+                if (execution.status().state() == QueryExecutionState.FAILED ||
+                        execution.status().state() == QueryExecutionState.CANCELLED ||
+                        execution.status().state() == QueryExecutionState.SUCCEEDED) {
+                    break;
+                }
+                Thread.sleep(1000);
+            }
 
-        // Process the results
-        while (resultSet.next()) {
-            System.out.println(resultSet.getString(1) + ", " + resultSet.getString(2));
+            if (execution.status().state() == QueryExecutionState.SUCCEEDED) {
+                GetQueryResultsRequest getQueryResultsRequest = GetQueryResultsRequest.builder()
+                        .queryExecutionId(queryExecutionId)
+                        .build();
+                GetQueryResultsResponse getQueryResultsResponse = client.getQueryResults(getQueryResultsRequest);
+
+                for (Row row : getQueryResultsResponse.resultSet().rows()) {
+                    // process row data
+                }
+            } else {
+                System.err.println("Query execution failed with state " + execution.status().state());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            System.err.println("Query execution failed: " + e.getMessage());
         }
-
-        // Close the connection
-        resultSet.close();
-        statement.close();
-        connection.close();
     }
 }
