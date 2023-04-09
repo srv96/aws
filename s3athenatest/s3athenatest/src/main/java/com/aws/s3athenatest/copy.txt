@@ -1,36 +1,54 @@
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import com.amazonaws.services.athena.AmazonAthena;
+import com.amazonaws.services.athena.model.*;
 
-public class PreparedStatementInput {
-    private final List<PreparedStatementParameter> parameters;
+public class AthenaQueryExecutor {
 
-    private PreparedStatementInput(Builder builder) {
-        this.parameters = builder.parameters;
+    private final AmazonAthena athena;
+
+    public AthenaQueryExecutor(AmazonAthena athena) {
+        this.athena = athena;
     }
 
-    public List<PreparedStatementParameter> getParameters() {
-        return parameters;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private final List<PreparedStatementParameter> parameters = new ArrayList<>();
-
-        public Builder setString(int index, String value) {
-            parameters.add(new PreparedStatementParameter(index, value));
-            return this;
-        }
-
-        public Builder setInt(int index, int value) {
-            parameters.add(new PreparedStatementParameter(index, value));
-            return this;
-        }
-
-        public PreparedStatementInput build() {
-            return new PreparedStatementInput(this);
+    public List<Map<String, String>> executeQuery(String query, Map<String, String> parameters) {
+        try {
+            PreparedStatement preparedStatement = athena.prepareNamedQuery(new PrepareNamedQueryRequest()
+                    .withNamedQueryId("query1")
+                    .withQueryString(query)
+                    .withWorkGroup("primary")
+            );
+            if (parameters != null && !parameters.isEmpty()) {
+                preparedStatement.setParameters(parameters);
+            }
+            QueryExecution queryExecution = athena.startQueryExecution(new StartQueryExecutionRequest()
+                    .withQueryExecutionContext(new QueryExecutionContext().withDatabase("default"))
+                    .withWorkGroup("primary")
+                    .withResultConfiguration(new ResultConfiguration().withOutputLocation("s3://my-bucket/results/"))
+                    .withQueryExecutionContext(new QueryExecutionContext().withDatabase("default"))
+                    .withQueryExecutionContext(new QueryExecutionContext().withCatalog("AwsDataCatalog"))
+                    .withPreparedStatement(preparedStatement)
+            );
+            String queryExecutionId = queryExecution.getQueryExecutionId();
+            QueryExecutionStatus queryExecutionStatus = null;
+            while (true) {
+                queryExecutionStatus = athena.getQueryExecution(new GetQueryExecutionRequest().withQueryExecutionId(queryExecutionId)).getQueryExecution().getStatus();
+                if (queryExecutionStatus.getState().equals(QueryExecutionState.FAILED.toString())) {
+                    throw new RuntimeException("Query execution failed: " + queryExecutionStatus.getStateChangeReason());
+                } else if (queryExecutionStatus.getState().equals(QueryExecutionState.SUCCEEDED.toString())) {
+                    break;
+                }
+                Thread.sleep(5000);
+            }
+            GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
+                    .withQueryExecutionId(queryExecutionId)
+                    .withMaxResults(1000);
+            GetQueryResultsResult getQueryResultsResult = athena.getQueryResults(getQueryResultsRequest);
+            List<ColumnInfo> columnInfoList = getQueryResultsResult.getResultSet().getResultSetMetadata().getColumnInfo();
+            List<Map<String, String>> resultList = AthenaUtils.transformToListOfMaps(getQueryResultsResult.getResultSet().getRows(), columnInfoList);
+            return resultList;
+        } catch (Exception e) {
+            throw new RuntimeException("Error executing Athena query: " + e.getMessage(), e);
         }
     }
 }
