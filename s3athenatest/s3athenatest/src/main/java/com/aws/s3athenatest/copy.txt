@@ -1,13 +1,7 @@
-public List<Map<String,String>> filterTable(List<Map<String,String>> table, List<String> headers) {
-  List<Map<String,String>> filteredTable = new ArrayList<>();
-  for (Map<String,String> row : table) {
-    Map<String,String> filteredRow = new HashMap<>();
-    for (String header : headers) {
-      if (row.containsKey(header)) {
-        filteredRow.put(header, row.get(header));
-      }
-    }
-    filteredTable.add(filteredRow);
+public void writeJsonFile(List<Map<String,String>> data, String filePath) {
+  try (FileWriter writer = new FileWriter(filePath)) {
+    new Gson().toJson(data, writer);
+  } catch (IOException e) {
+    e.printStackTrace();
   }
-  return filteredTable;
 }
