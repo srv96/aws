@@ -1,40 +1,13 @@
-public List<Map<String, String>> readExcel(String filePath) {
-  List<Map<String, String>> data = new ArrayList<>();
-  try (InputStream inputStream = new FileInputStream(filePath);
-      Workbook workbook = WorkbookFactory.create(inputStream)) {
-    Sheet sheet = workbook.getSheetAt(0);
-    Row headerRow = sheet.getRow(0);
-    int numColumns = headerRow.getLastCellNum();
-    for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-      Row row = sheet.getRow(i);
-      if (row == null)
-        continue;
-      Map<String, String> rowData = new HashMap<>();
-      for (int j = 0; j < numColumns; j++) {
-        Cell cell = row.getCell(j, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-        String cellValue = "";
-        switch (cell.getCellType()) {
-          case STRING:
-            cellValue = cell.getStringCellValue();
-            break;
-          case NUMERIC:
-            cellValue = String.valueOf(cell.getNumericCellValue());
-            break;
-          case BOOLEAN:
-            cellValue = String.valueOf(cell.getBooleanCellValue());
-            break;
-          case FORMULA:
-            cellValue = cell.getCellFormula();
-            break;
-          default:
-            cellValue = "";
-        }
-        rowData.put(headerRow.getCell(j).getStringCellValue(), cellValue);
+public List<Map<String,String>> filterTable(List<Map<String,String>> table, List<String> headers) {
+  List<Map<String,String>> filteredTable = new ArrayList<>();
+  for (Map<String,String> row : table) {
+    Map<String,String> filteredRow = new HashMap<>();
+    for (String header : headers) {
+      if (row.containsKey(header)) {
+        filteredRow.put(header, row.get(header));
       }
-      data.add(rowData);
     }
-  } catch (Exception e) {
-    e.printStackTrace();
+    filteredTable.add(filteredRow);
   }
-  return data;
+  return filteredTable;
 }
