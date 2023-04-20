@@ -1,60 +1,39 @@
-import java.io.*;
-import java.util.*;
-import com.opencsv.*;
-
-public class CsvJoiner {
-
-    public static void main(String[] args) {
-
-        // Check if the correct number of arguments were passed
-        if (args.length != 3) {
-            System.out.println("Usage: java CsvJoiner <file1.csv> <file2.csv> <output.csv>");
-            return;
+public static List<Map<String, String>> readExcelFile(String filePath) throws Exception {
+        File file = new File(filePath);
+        FileInputStream fis = new FileInputStream(file);
+        
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        
+        Element root = db.parse(fis).getDocumentElement();
+        NodeList sheetDataNodes = root.getElementsByTagName("sheetData");
+        Element sheetData = (Element) sheetDataNodes.item(0);
+        
+        List<Map<String, String>> sheetDataList = new ArrayList<>();
+        
+        NodeList rowNodes = sheetData.getElementsByTagName("row");
+        for(int i = 0; i < rowNodes.getLength(); i++) {
+            Element row = (Element) rowNodes.item(i);
+            NodeList cellNodes = row.getElementsByTagName("c");
+            
+            Map<String, String> rowMap = new HashMap<>();
+            
+            for(int j = 0; j < cellNodes.getLength(); j++) {
+                Element cell = (Element) cellNodes.item(j);
+                String columnName = getColumnFromCellReference(cell.getAttribute("r"));
+                String cellValue = cell.getTextContent();
+                
+                rowMap.put(columnName, cellValue);
+            }
+            
+            sheetDataList.add(rowMap);
         }
-
-        // Parse command line arguments
-        String file1 = args[0];
-        String file2 = args[1];
-        String output = args[2];
-
-        try {
-
-            // Read the first CSV file into a table
-            CSVReader reader1 = new CSVReader(new FileReader(file1));
-            List<String[]> table1 = reader1.readAll();
-
-            // Read the second CSV file into a table
-            CSVReader reader2 = new CSVReader(new FileReader(file2));
-            List<String[]> table2 = reader2.readAll();
-
-            // Perform the join operation on the specified column
-            Map<String, String[]> map = new HashMap<>();
-            for (String[] row : table1) {
-                map.put(row[0], row);
-            }
-            for (String[] row : table2) {
-                String[] other = map.get(row[0]);
-                if (other != null) {
-                    String[] joined = new String[other.length + row.length - 1];
-                    System.arraycopy(other, 0, joined, 0, other.length);
-                    System.arraycopy(row, 1, joined, other.length, row.length - 1);
-                    map.put(row[0], joined);
-                }
-            }
-
-            // Write the result to a new CSV file
-            CSVWriter writer = new CSVWriter(new FileWriter(output));
-            for (String[] row : map.values()) {
-                writer.writeNext(row);
-            }
-            writer.close();
-
-            System.out.println("Join operation successful. Output written to " + output);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        
+        fis.close();
+        
+        return sheetDataList;
     }
-
-}
+    
+    private static String getColumnFromCellReference(String cellReference) {
+        return cellReference.replaceAll("\\d", "");
+    }
