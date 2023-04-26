@@ -1,7 +1,41 @@
-public void writeJsonFile(List<Map<String,String>> data, String filePath) {
-  try (FileWriter writer = new FileWriter(filePath)) {
-    new Gson().toJson(data, writer);
-  } catch (IOException e) {
-    e.printStackTrace();
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import java.io.InputStream;
+
+public class S3Uploader {
+
+  public static void main(String[] args) {
+  
+    // Replace the following values with your own S3 bucket and object key
+    String bucketName = "your-bucket-name";
+    String objectKey = "your-object-key";
+    
+    // Create an S3 client
+    S3Client s3 = S3Client.builder()
+        .region(Region.US_EAST_1) // Replace with your desired region
+        .credentialsProvider(DefaultCredentialsProvider.create())
+        .build();
+        
+    // Create a PutObjectRequest with your bucket name, object key, and input stream
+    PutObjectRequest request = PutObjectRequest.builder()
+        .bucket(bucketName)
+        .key(objectKey)
+        .build();
+        
+    // Replace the following line with your input stream
+    InputStream inputStream = getInputStream();
+    
+    // Upload the stream to S3
+    s3.putObject(request, RequestBody.fromInputStream(inputStream, inputStream.available()));
   }
+  
+  // Example method to get an input stream
+  private static InputStream getInputStream() {
+    // Replace with your own input stream logic
+    return new ByteArrayInputStream("Hello, world!".getBytes());
+  }
+
 }
+
