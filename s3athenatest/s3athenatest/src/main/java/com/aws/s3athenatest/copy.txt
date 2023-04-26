@@ -1,34 +1,45 @@
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Object;
+import java.io.*;
 
-import java.io.InputStream;
-
-public class S3Downloader {
-
-    public static void main(String[] args) {
-
-        String bucketName = "your-bucket-name";
-        String objectKey = "your-object-key";
-
-        S3Client s3 = S3Client.builder()
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .region(Region.US_EAST_1)
-                .build();
-
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(objectKey)
-                .build();
-
-        S3Object s3Object = s3.getObject(request);
-
-        InputStream objectData = s3Object.objectContent();
-
-        // Do something with the objectData InputStream
-
+public class PojoToInputStreamExample {
+    
+    public static void main(String[] args) throws IOException {
+        
+        // Create a POJO instance
+        MyPojo myPojo = new MyPojo();
+        myPojo.setName("John Doe");
+        myPojo.setAge(30);
+        
+        // Serialize the POJO into a byte array
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(myPojo);
+        byte[] bytes = baos.toByteArray();
+        
+        // Create an InputStream from the byte array
+        InputStream inputStream = new ByteArrayInputStream(bytes);
+        
+        // Use the inputStream as needed
+        // For example, you could read the serialized object back into a POJO:
+        ObjectInputStream ois = new ObjectInputStream(inputStream);
+        try {
+            MyPojo deserializedPojo = (MyPojo) ois.readObject();
+            System.out.println(deserializedPojo.getName());
+            System.out.println(deserializedPojo.getAge());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }
 
+class MyPojo implements Serializable {
+    private String name;
+    private int age;
+    
+    // Getters and setters omitted for brevity
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+       
