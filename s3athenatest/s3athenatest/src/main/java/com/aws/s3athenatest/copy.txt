@@ -1,41 +1,34 @@
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
 import java.io.InputStream;
 
-public class S3Uploader {
+public class S3Downloader {
 
-  public static void main(String[] args) {
-  
-    // Replace the following values with your own S3 bucket and object key
-    String bucketName = "your-bucket-name";
-    String objectKey = "your-object-key";
-    
-    // Create an S3 client
-    S3Client s3 = S3Client.builder()
-        .region(Region.US_EAST_1) // Replace with your desired region
-        .credentialsProvider(DefaultCredentialsProvider.create())
-        .build();
-        
-    // Create a PutObjectRequest with your bucket name, object key, and input stream
-    PutObjectRequest request = PutObjectRequest.builder()
-        .bucket(bucketName)
-        .key(objectKey)
-        .build();
-        
-    // Replace the following line with your input stream
-    InputStream inputStream = getInputStream();
-    
-    // Upload the stream to S3
-    s3.putObject(request, RequestBody.fromInputStream(inputStream, inputStream.available()));
-  }
-  
-  // Example method to get an input stream
-  private static InputStream getInputStream() {
-    // Replace with your own input stream logic
-    return new ByteArrayInputStream("Hello, world!".getBytes());
-  }
+    public static void main(String[] args) {
 
+        String bucketName = "your-bucket-name";
+        String objectKey = "your-object-key";
+
+        S3Client s3 = S3Client.builder()
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .region(Region.US_EAST_1)
+                .build();
+
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+
+        S3Object s3Object = s3.getObject(request);
+
+        InputStream objectData = s3Object.objectContent();
+
+        // Do something with the objectData InputStream
+
+    }
 }
 
