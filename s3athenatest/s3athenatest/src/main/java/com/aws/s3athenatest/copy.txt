@@ -1,66 +1,29 @@
+public static void main(String[] args) {
+    // Create a ProfileCredentialsProvider object.
+    ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.builder().build();
 
-import software.amazon.awssdk.auth.credentials.*;
-import software.amazon.awssdk.regions.*;
-import software.amazon.awssdk.services.glacier.*;
-import software.amazon.awssdk.services.s3.*;
-import software.amazon.awssdk.services.s3.model.*;
-import java.nio.file.*;
-import java.io.*;
+    // Create a Region object.
+    Region region = Region.US_EAST_1;
 
-public class GlacierToS3Service {
-    
-    public static void main(String[] args) throws IOException {
-        
-        // Set up credentials and region
-        AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(
-            AwsBasicCredentials.create("ACCESS_KEY_ID", "SECRET_ACCESS_KEY"));
-        Region region = Region.US_WEST_2;
-        
-        // Set up clients for Glacier and S3
-        GlacierClient glacierClient = GlacierClient.builder()
+    // Create a SdkHttpClient object.
+    ApacheHttpClient httpClient = ApacheHttpClient.builder()
+            .proxyConfiguration(ProxyConfiguration.builder()
+                    .host("127.0.0.1")
+                    .port(8080)
+                    .username("username")
+                    .password("password")
+                    .build())
+            .build();
+
+    // Create a GlueClient object.
+    GlueClient glueClient = GlueClient.builder()
             .credentialsProvider(credentialsProvider)
             .region(region)
+            .httpClient(httpClient)
             .build();
-        S3Client s3Client = S3Client.builder()
-            .credentialsProvider(credentialsProvider)
-            .region(region)
-            .build();
-        
-        // Get archive list from Glacier vault
-        ListArchivesRequest listArchivesRequest = ListArchivesRequest.builder()
-            .vaultName("VAULT_NAME")
-            .build();
-        ListArchivesResponse listArchivesResponse = glacierClient.listArchives(listArchivesRequest);
-        List<ArchiveListEntry> archiveListEntries = listArchivesResponse.archiveList();
-        
-        // Loop through archive list and retrieve each archive
-        for (ArchiveListEntry archiveListEntry : archiveListEntries) {
-            
-            // Retrieve archive from Glacier
-            String archiveId = archiveListEntry.archiveId();
-            GetJobOutputRequest getJobOutputRequest = GetJobOutputRequest.builder()
-                .vaultName("VAULT_NAME")
-                .jobId(archiveId)
-                .build();
-            GetJobOutputResponse getJobOutputResponse = glacierClient.getJobOutput(getJobOutputRequest);
-            InputStream archiveInputStream = getJobOutputResponse.body();
-            
-            // Upload archive to S3
-            String s3BucketName = "S3_BUCKET_NAME";
-            String s3ObjectName = "S3_OBJECT_NAME";
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(s3BucketName)
-                .key(s3ObjectName)
-                .build();
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(archiveInputStream, -1));
-            
-            // Close archive input stream
-            archiveInputStream.close();
-        }
-        
-        // Close clients
-        glacierClient.close();
-        s3Client.close();
-    }
+
+    // Call an AWS Glue API.
+    glueClient.createJob(CreateJobRequest.builder()
+            .jobName("my-job")
+            .build());
 }
-
