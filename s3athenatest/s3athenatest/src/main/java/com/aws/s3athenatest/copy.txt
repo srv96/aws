@@ -1,29 +1,73 @@
-public static void main(String[] args) {
-    // Create a ProfileCredentialsProvider object.
-    ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.builder().build();
 
-    // Create a Region object.
-    Region region = Region.US_EAST_1;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.athena.AthenaClient;
+import software.amazon.awssdk.services.athena.model.*;
 
-    // Create a SdkHttpClient object.
-    ApacheHttpClient httpClient = ApacheHttpClient.builder()
-            .proxyConfiguration(ProxyConfiguration.builder()
-                    .host("127.0.0.1")
-                    .port(8080)
-                    .username("username")
-                    .password("password")
-                    .build())
-            .build();
+public class GlueCatalogTableCreator {
+    private static final String DATABASE_NAME = "your_database_name";
+    private static final String TABLE_NAME = "your_table_name";
+    private static final String S3_LOCATION = "s3://your-bucket/your-folder/";
 
-    // Create a GlueClient object.
-    GlueClient glueClient = GlueClient.builder()
-            .credentialsProvider(credentialsProvider)
-            .region(region)
-            .httpClient(httpClient)
-            .build();
+    public static void createTableInGlueCatalog() {
+        // Create an AthenaClient
+        AthenaClient athenaClient = AthenaClient.builder().region(Region.AWS_GLOBAL).build();
 
-    // Call an AWS Glue API.
-    glueClient.createJob(CreateJobRequest.builder()
-            .jobName("my-job")
-            .build());
-}
+        // Create the CreateTableRequest
+        CreateTableRequest createTableRequest = CreateTableRequest.builder()
+                .databaseName(DATABASE_NAME)
+                .tableInput(TableInput.builder()
+                        .name(TABLE_NAME)
+                        .storageDescriptor(StorageDescriptor.builder()
+                                .columns(Column.builder()
+                                        .name("column1")
+                                        .type("string")
+                                        .build())
+                                .location(S3_LOCATION)
+                                .inputFormat("org.apache.hadoop.mapred.TextInputFormat")
+                                .outputFormat("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat")
+                                .compressed(false)
+                                .build())
+                        .partitionKeys(PartitionKey.builder()
+                                .name("partitionColumn1")
+                                .type("string")
+                                .build())
+                        .tableType("EXTERNAL_TABLE")
+                        .build())
+                .build();
+
+        // Create the table in Glue Catalog
+        athenaClient.startQueryExecution(StartQueryExecutionRequest.builder()
+                .queryString(buildCreateTableQuery(createTableRequest))
+                .resultConfiguration(ResultConfiguration.builder()
+                        .outputLocation("s3://your-bucket/query-results/")
+                        .build())
+                .build());
+
+        // Wait for the table to become available
+        waitUntilTableIsAvailable(athenaClient, DATABASE_NAME, TABLE_NAME);
+
+        // Close the client
+        athenaClient.close();
+    }
+
+    private static String buildCreateTableQuery(CreateTableRequest createTableRequest) {
+        String databaseName = createTableRequest.databaseName();
+        String tableName = createTableRequest.tableInput().name();
+        String location = createTableRequest.tableInput().storageDescriptor().location();
+        String inputFormat = createTableRequest.tableInput().storageDescriptor().inputFormat();
+        String outputFormat = createTableRequest.tableInput().storageDescriptor().outputFormat();
+        boolean compressed = createTableRequest.tableInput().storageDescriptor().compressed();
+        String column1Name = createTableRequest.tableInput().storageDescriptor().columns().get(0).name();
+        String column1Type = createTableRequest.tableInput().storageDescriptor().columns().get(0).type();
+        String partitionColumn1Name = createTableRequest.tableInput().partitionKeys().get(0).name();
+        String partitionColumn1Type = createTableRequest.tableInput().partitionKeys().get(0).type();
+
+        return String.format("CREATE EXTERNAL TABLE %s.%s (%s %s) " +
+                "PARTITIONED BY (%s %s) " +
+                "ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' " +
+                "WITH SERDEPROPERTIES ('serialization.format'='1') " +
+                "LOCATION '%s' " +
+                "INPUTFORMAT '%s' " +
+                "OUTPUTFORMAT '%s' " +
+                "TBLPROPERTIES ('has_encrypted_data'='false')",
+                databaseName, tableName, column1Name, column1Type, partitionColumn1Name, partitionColumn
