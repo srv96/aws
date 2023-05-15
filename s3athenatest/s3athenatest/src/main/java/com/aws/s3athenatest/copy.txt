@@ -1,73 +1,22 @@
+CreateTableRequest createTableRequest = CreateTableRequest.builder()
+                    .databaseName("your-database-name") // Replace with your database name
+                    .tableInput(TableInput.builder()
+                            .name("your-table-name") // Replace with your table name
+                            .description("your-table-description") // Replace with your table description
+                            .tableType("EXTERNAL_TABLE") // Replace with your desired table type
+                            .parameters(/* Optional table parameters if any, specify as key-value pairs */)
+                            .storageDescriptor(StorageDescriptor.builder()
+                                    .columns(/* Specify your table columns */)
+                                    .location("s3://your-bucket/path/to/table") // Replace with the S3 path to your table
+                                    .inputFormat("your-input-format") // Replace with your input format
+                                    .outputFormat("your-output-format") // Replace with your output format
+                                    .compressed(false) // Set to true if your data is compressed
+                                    .numberOfBuckets(0) // Set the number of buckets if your table is bucketed
+                                    .serdeInfo(SerDeInfo.builder()
+                                            .serializationLibrary("your-serialization-library") // Replace with your serialization library
+                                            .parameters(/* Optional SerDe parameters if any, specify as key-value pairs */)
+                                            .build())
+                                    .build())
+                            .build())
+                    .build();
 
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.athena.AthenaClient;
-import software.amazon.awssdk.services.athena.model.*;
-
-public class GlueCatalogTableCreator {
-    private static final String DATABASE_NAME = "your_database_name";
-    private static final String TABLE_NAME = "your_table_name";
-    private static final String S3_LOCATION = "s3://your-bucket/your-folder/";
-
-    public static void createTableInGlueCatalog() {
-        // Create an AthenaClient
-        AthenaClient athenaClient = AthenaClient.builder().region(Region.AWS_GLOBAL).build();
-
-        // Create the CreateTableRequest
-        CreateTableRequest createTableRequest = CreateTableRequest.builder()
-                .databaseName(DATABASE_NAME)
-                .tableInput(TableInput.builder()
-                        .name(TABLE_NAME)
-                        .storageDescriptor(StorageDescriptor.builder()
-                                .columns(Column.builder()
-                                        .name("column1")
-                                        .type("string")
-                                        .build())
-                                .location(S3_LOCATION)
-                                .inputFormat("org.apache.hadoop.mapred.TextInputFormat")
-                                .outputFormat("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat")
-                                .compressed(false)
-                                .build())
-                        .partitionKeys(PartitionKey.builder()
-                                .name("partitionColumn1")
-                                .type("string")
-                                .build())
-                        .tableType("EXTERNAL_TABLE")
-                        .build())
-                .build();
-
-        // Create the table in Glue Catalog
-        athenaClient.startQueryExecution(StartQueryExecutionRequest.builder()
-                .queryString(buildCreateTableQuery(createTableRequest))
-                .resultConfiguration(ResultConfiguration.builder()
-                        .outputLocation("s3://your-bucket/query-results/")
-                        .build())
-                .build());
-
-        // Wait for the table to become available
-        waitUntilTableIsAvailable(athenaClient, DATABASE_NAME, TABLE_NAME);
-
-        // Close the client
-        athenaClient.close();
-    }
-
-    private static String buildCreateTableQuery(CreateTableRequest createTableRequest) {
-        String databaseName = createTableRequest.databaseName();
-        String tableName = createTableRequest.tableInput().name();
-        String location = createTableRequest.tableInput().storageDescriptor().location();
-        String inputFormat = createTableRequest.tableInput().storageDescriptor().inputFormat();
-        String outputFormat = createTableRequest.tableInput().storageDescriptor().outputFormat();
-        boolean compressed = createTableRequest.tableInput().storageDescriptor().compressed();
-        String column1Name = createTableRequest.tableInput().storageDescriptor().columns().get(0).name();
-        String column1Type = createTableRequest.tableInput().storageDescriptor().columns().get(0).type();
-        String partitionColumn1Name = createTableRequest.tableInput().partitionKeys().get(0).name();
-        String partitionColumn1Type = createTableRequest.tableInput().partitionKeys().get(0).type();
-
-        return String.format("CREATE EXTERNAL TABLE %s.%s (%s %s) " +
-                "PARTITIONED BY (%s %s) " +
-                "ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' " +
-                "WITH SERDEPROPERTIES ('serialization.format'='1') " +
-                "LOCATION '%s' " +
-                "INPUTFORMAT '%s' " +
-                "OUTPUTFORMAT '%s' " +
-                "TBLPROPERTIES ('has_encrypted_data'='false')",
-                databaseName, tableName, column1Name, column1Type, partitionColumn1Name, partitionColumn
