@@ -1,22 +1,36 @@
-CreateTableRequest createTableRequest = CreateTableRequest.builder()
-                    .databaseName("your-database-name") // Replace with your database name
-                    .tableInput(TableInput.builder()
-                            .name("your-table-name") // Replace with your table name
-                            .description("your-table-description") // Replace with your table description
-                            .tableType("EXTERNAL_TABLE") // Replace with your desired table type
-                            .parameters(/* Optional table parameters if any, specify as key-value pairs */)
-                            .storageDescriptor(StorageDescriptor.builder()
-                                    .columns(/* Specify your table columns */)
-                                    .location("s3://your-bucket/path/to/table") // Replace with the S3 path to your table
-                                    .inputFormat("your-input-format") // Replace with your input format
-                                    .outputFormat("your-output-format") // Replace with your output format
-                                    .compressed(false) // Set to true if your data is compressed
-                                    .numberOfBuckets(0) // Set the number of buckets if your table is bucketed
-                                    .serdeInfo(SerDeInfo.builder()
-                                            .serializationLibrary("your-serialization-library") // Replace with your serialization library
-                                            .parameters(/* Optional SerDe parameters if any, specify as key-value pairs */)
-                                            .build())
-                                    .build())
-                            .build())
-                    .build();
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class DirectoryFilePaths {
+    public static List<String> getFilePaths(String directory) {
+        List<String> filePaths = new ArrayList<>();
+        File dir = new File(directory);
+
+        if (dir.exists() && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        filePaths.add(file.getAbsolutePath());
+                    }
+                }
+            }
+        }
+
+        return filePaths;
+    }
+
+    public static void main(String[] args) {
+        String directory = "C:/path/to/directory";  // Replace with the desired directory path
+
+        List<String> filePaths = getFilePaths(directory);
+
+        System.out.println("Absolute file paths in the directory:");
+        for (String filePath : filePaths) {
+            System.out.println(filePath);
+        }
+    }
+}
 
