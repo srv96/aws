@@ -1,41 +1,18 @@
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import java.io.File;
-
-public class DirectoryCreator {
-    public static void createDirectory(String path) {
-        try {
-            // Check if the path is empty or null
-            if (path == null || path.isEmpty()) {
-                System.out.println("Invalid path. Please provide a valid path.");
-                return;
-            }
-
-            File directory = new File(path);
-
-            // Check if the directory already exists
-            if (directory.exists()) {
-                System.out.println("Directory already exists.");
-                return;
-            }
-
-            // Create the directory
-            boolean success = directory.mkdirs();
-
-            if (success) {
-                System.out.println("Directory created successfully.");
-            } else {
-                System.out.println("Failed to create directory.");
-            }
-        } catch (SecurityException e) {
-            System.out.println("Insufficient permissions to create directory.");
-        } catch (Exception e) {
-            System.out.println("An error occurred while creating the directory.");
-            e.printStackTrace();
-        }
-    }
-
+public class MainApp {
     public static void main(String[] args) {
-        String path = "/path/to/new/directory";
-        createDirectory(path);
+        // Create the application context
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        
+        // Create an instance of BeanUtils and pass the application context
+        BeanUtils beanUtils = new BeanUtils(context);
+        
+        // Get the bean by name
+        MyBean myBean = (MyBean) beanUtils.getBeanByName("myBean");
+        
+        // Use the retrieved bean
+        myBean.doSomething();
     }
 }
+
