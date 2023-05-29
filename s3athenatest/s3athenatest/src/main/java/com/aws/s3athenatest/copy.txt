@@ -1,33 +1,43 @@
 
-Modular vs Monolithic Approach
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 
+public class S3CrtAsyncClientWithProxy {
 
-User
-if i am making a component in java whcih have 5 sub component then which is better 
-1. making all the config in one place, service in place and model in one place
-2. making 5 folder and make config service model folder in each . 
+    public static void main(String[] args) throws AmazonS3Exception {
 
-ChatGPT
-When designing a component in Java with five sub-components, the best approach depends on the specific requirements and complexity of your project. However, here are two common strategies:
+        // Create AWSCredentials object
+        AWSCredentials credentials = new BasicAWSCredentials("accessKeyId", "secretAccessKey");
 
-Monolithic Approach:
-In this approach, you can organize your code into packages or modules based on functionality rather than creating separate folders for each sub-component. You can have a single configuration package, service package, and model package within your component.
-Advantages:
+        // Create ClientConfiguration object and set the proxy settings
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setProxyHost("127.0.0.1");
+        clientConfiguration.setProxyPort(8080);
 
-Simplicity: Having everything in one place can make it easier to navigate and understand the overall structure of your component.
-Code reusability: Components can easily access and share common resources.
-Disadvantages:
+        // Create AmazonS3ClientBuilder object and set the credentials and client configuration
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard();
+        clientBuilder.setCredentials(credentials);
+        clientBuilder.setClientConfiguration(clientConfiguration);
 
-Increased complexity: As the component grows, it may become more challenging to manage and maintain.
-Potential for code duplication: Without clear separation, it may be more difficult to identify and eliminate duplicated code.
-Modular Approach:
-In this approach, you create separate folders for each sub-component, such as config, service, and model.
-Advantages:
+        // Create AmazonS3 object using the AmazonS3ClientBuilder object
+        AmazonS3 s3 = clientBuilder.build();
 
-Modularity: Each sub-component is organized and contained within its own folder, making it easier to manage and maintain.
-Code isolation: Changes made to one sub-component are less likely to impact others, promoting better code encapsulation.
-Disadvantages:
+        // Get the object from S3
+        GetObjectRequest request = new GetObjectRequest("bucketName", "objectKey");
+        S3Object object = s3.getObject(request);
 
-Increased overhead: With more folders and files, there may be a slight increase in complexity and overhead for navigating between different sub-components.
-Potential redundancy: If there are common resources required by multiple sub-components, you need to manage them appropriately to avoid code duplication.
-Overall, both approaches have their merits, and the choice depends on the specific needs and complexity of your project. If the component is relatively small and the sub-components are closely related, the monolithic approach might provide simplicity and code reusability. However, if the sub-components are distinct and likely to evolve independently, the modular approach can offer better code organization and maintainability.
+        // Get the object's contents
+        InputStream objectContent = object.getObjectContent();
+
+        // Close the input stream
+        objectContent.close();
+    }
+}
