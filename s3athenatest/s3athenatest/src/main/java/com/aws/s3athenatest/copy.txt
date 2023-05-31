@@ -1,43 +1,27 @@
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+public class ResultSetConverter {
+    public static List<Map<String, String>> convertResultSetToList(ResultSet resultSet) throws SQLException {
+        List<Map<String, String>> resultList = new ArrayList<>();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
 
-public class S3CrtAsyncClientWithProxy {
+        while (resultSet.next()) {
+            Map<String, String> row = new HashMap<>();
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnName(i);
+                String columnValue = resultSet.getString(i);
+                row.put(columnName, columnValue);
+            }
+            resultList.add(row);
+        }
 
-    public static void main(String[] args) throws AmazonS3Exception {
-
-        // Create AWSCredentials object
-        AWSCredentials credentials = new BasicAWSCredentials("accessKeyId", "secretAccessKey");
-
-        // Create ClientConfiguration object and set the proxy settings
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setProxyHost("127.0.0.1");
-        clientConfiguration.setProxyPort(8080);
-
-        // Create AmazonS3ClientBuilder object and set the credentials and client configuration
-        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard();
-        clientBuilder.setCredentials(credentials);
-        clientBuilder.setClientConfiguration(clientConfiguration);
-
-        // Create AmazonS3 object using the AmazonS3ClientBuilder object
-        AmazonS3 s3 = clientBuilder.build();
-
-        // Get the object from S3
-        GetObjectRequest request = new GetObjectRequest("bucketName", "objectKey");
-        S3Object object = s3.getObject(request);
-
-        // Get the object's contents
-        InputStream objectContent = object.getObjectContent();
-
-        // Close the input stream
-        objectContent.close();
+        return resultList;
     }
 }
