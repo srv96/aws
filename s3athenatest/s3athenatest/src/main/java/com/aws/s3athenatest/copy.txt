@@ -1,11 +1,11 @@
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MapUtils {
-    public static Map<String, Boolean> filterTrueValues(Map<String, Boolean> map) {
-        return map.entrySet().stream()
-                .filter(entry -> entry.getValue())
-                .collect(HashMap::new, (m, entry) -> m.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+    public static Map<String, Boolean> createFileMap(List<String> filenames) {
+        return filenames.stream()
+                .collect(HashMap::new, (m, filename) -> m.put(filename, false), HashMap::putAll);
     }
 }
 
