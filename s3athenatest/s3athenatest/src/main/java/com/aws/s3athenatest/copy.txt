@@ -1,11 +1,53 @@
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MapUtils {
-    public static Map<String, Boolean> createFileMap(List<String> filenames) {
-        return filenames.stream()
-                .collect(HashMap::new, (m, filename) -> m.put(filename, false), HashMap::putAll);
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+
+public class CsvReaderTest {
+
+    @Mock
+    private BufferedReader mockBufferedReader;
+
+    @Mock
+    private FileReader mockFileReader;
+
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    public void testReadCsv() throws IOException {
+        // Set up test data
+        String filePath = "path/to/csv/file.csv";
+        List<Map<String, String>> expectedDataList = new ArrayList<>();
+        Map<String, String> dataMap1 = new HashMap<>();
+        dataMap1.put("column1", "value1");
+        dataMap1.put("column2", "value2");
+        expectedDataList.add(dataMap1);
+
+        // Set up mocked behavior
+        when(mockFileReader.read()).thenReturn(-1);  // End of file
+        when(mockBufferedReader.readLine()).thenReturn("column1,column2", "value1,value2", null);
+
+        // Call the method under test
+        List<Map<String, String>> actualDataList = CsvReader.readCsv(filePath);
+
+        // Verify the results
+        assertEquals(expectedDataList, actualDataList);
+        verify(mockBufferedReader, times(3)).readLine();  // Verify the method was called 3 times (header + data + null)
+        verify(mockBufferedReader).close();  // Verify the BufferedReader was closed
+        verify(mockFileReader).close();  // Verify the FileReader was closed
     }
 }
+
 
