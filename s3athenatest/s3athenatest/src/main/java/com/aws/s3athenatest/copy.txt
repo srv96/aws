@@ -1,13 +1,22 @@
-public static ResultSet convertCSVtoResultSet(String filePath) throws IOException, CsvException, SQLException {
+import com.opencsv.CSVParser;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+
+public class CSVtoResultSetParser {
+    public static ResultSet parseCSVtoResultSet(String filePath) throws IOException, CsvException, SQLException {
         CSVReader reader = new CSVReader(new FileReader(filePath));
-        List<String[]> rows = reader.readAll();
+        String[] header = reader.readNext();
+        String[][] data = reader.readAll();
         reader.close();
 
-        String[] header = rows.get(0);
-        List<String[]> data = rows.subList(1, rows.size());
-
-        // Create a custom ListResultSet
-        ListResultSet resultSet = new ListResultSet(header);
+        // Create a custom ArrayResultSet
+        ArrayResultSet resultSet = new ArrayResultSet(header);
 
         // Add rows to the result set
         for (String[] row : data) {
@@ -17,3 +26,63 @@ public static ResultSet convertCSVtoResultSet(String filePath) throws IOExceptio
         // Return the ResultSet
         return resultSet;
     }
+
+    public static void main(String[] args) {
+        String filePath = "path/to/your/file.csv";
+        try {
+            ResultSet resultSet = parseCSVtoResultSet(filePath);
+            // Use the resultSet as needed
+
+            // Remember to close the resultSet when you're done using it
+            resultSet.close();
+        } catch (IOException | CsvException | SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static class ArrayResultSet implements ResultSet {
+        private final String[] header;
+        private final Object[][] data;
+        private int currentRow;
+
+        public ArrayResultSet(String[] header) {
+            this.header = header;
+            this.data = new Object[0][header.length];
+            this.currentRow = -1;
+        }
+
+        public void addRow(String[] row) {
+            Object[] rowData = new Object[row.length];
+            System.arraycopy(row, 0, rowData, 0, row.length);
+            Object[][] newData = new Object[data.length + 1][];
+            System.arraycopy(data, 0, newData, 0, data.length);
+            newData[data.length] = rowData;
+            data = newData;
+        }
+
+        @Override
+        public boolean next() throws SQLException {
+            currentRow++;
+            return currentRow < data.length;
+        }
+
+        @Override
+        public String getString(String columnLabel) throws SQLException {
+            int columnIndex = findColumn(columnLabel);
+            return (String) data[currentRow][columnIndex];
+        }
+
+        @Override
+        public int findColumn(String columnLabel) throws SQLException {
+            for (int i = 0; i < header.length; i++) {
+                if (header[i].equalsIgnoreCase(columnLabel)) {
+                    return i;
+                }
+            }
+            throw new SQLException("Column not found: " + columnLabel);
+        }
+
+        // Other ResultSet interface methods are not implemented in this example
+        // You can choose to implement them based on your requirements
+    }
+}
