@@ -1,46 +1,23 @@
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
+public static ResultSet createResultSetFromFile(String filePath) throws SQLException {
+        // Create an in-memory H2 database
+        Connection connection = DriverManager.getConnection("jdbc:h2:mem:");
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+        // Load CSV data into the database
+        Csv csv = new Csv();
+        csv.setFieldSeparator(',');
+        csv.setLineSeparator("\n");
+        csv.setIgnoreCase(false);
+        csv.setCharset("UTF-8");
+        csv.setSchema("PUBLIC");
+        csv.setTable("TEMP_TABLE");
+        csv.setColumnNames(true);
+        csv.setConnection(connection);
+        csv.read(filePath, null);
 
-public class ResultSetCreator {
-    public static ResultSet createResultSetFromFile(String filePath) throws IOException, CsvException, SQLException {
-        CSVReader reader = new CSVReader(new FileReader(filePath));
-        String[] header = reader.readNext();
-        String[][] data = reader.readAll();
-        reader.close();
-
-        // Create a SimpleResultSet
-        SimpleResultSet resultSet = new SimpleResultSet();
-
-        // Set column names and types
-        for (int i = 0; i < header.length; i++) {
-            resultSet.addColumn(header[i], Types.VARCHAR, 0);
-        }
-
-        // Add rows to the result set
-        for (String[] row : data) {
-            resultSet.addRow(row);
-        }
+        // Execute a select query to retrieve the data as a ResultSet
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT * FROM TEMP_TABLE");
 
         // Return the ResultSet
         return resultSet;
     }
-
-    public static void main(String[] args) {
-        String filePath = "path/to/your/file.csv";
-        try {
-            ResultSet resultSet = createResultSetFromFile(filePath);
-            // Use the resultSet as needed
-
-            // Remember to close the resultSet when you're done using it
-            resultSet.close();
-        } catch (IOException | CsvException | SQLException e) {
-            e.printStackTrace();
-        }
-    }
-}
