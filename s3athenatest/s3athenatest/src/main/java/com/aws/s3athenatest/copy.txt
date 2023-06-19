@@ -3,47 +3,32 @@ import com.opencsv.exceptions.CsvException;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.SQLException;
+import java.sql.Types;
 
 public class ResultSetCreator {
-    public static ResultSet createResultSetFromFile(String filePath) throws IOException, CsvException {
-        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
-            String[] header = reader.readNext();
-            String[][] data = reader.readAll();
+    public static ResultSet createResultSetFromFile(String filePath) throws IOException, CsvException, SQLException {
+        CSVReader reader = new CSVReader(new FileReader(filePath));
+        String[] header = reader.readNext();
+        String[][] data = reader.readAll();
+        reader.close();
 
-            // Create an in-memory SQLite database
-            Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
-            Statement statement = connection.createStatement();
+        // Create a SimpleResultSet
+        SimpleResultSet resultSet = new SimpleResultSet();
 
-            // Create a temporary table
-            StringBuilder createTableQuery = new StringBuilder("CREATE TABLE temp_table (");
-            for (String columnName : header) {
-                createTableQuery.append(columnName).append(" TEXT,");
-            }
-            createTableQuery.deleteCharAt(createTableQuery.length() - 1); // Remove the trailing comma
-            createTableQuery.append(")");
-            statement.execute(createTableQuery.toString());
-
-            // Insert data into the temporary table
-            for (String[] row : data) {
-                StringBuilder insertQuery = new StringBuilder("INSERT INTO temp_table VALUES (");
-                for (String value : row) {
-                    insertQuery.append("'").append(value).append("',");
-                }
-                insertQuery.deleteCharAt(insertQuery.length() - 1); // Remove the trailing comma
-                insertQuery.append(")");
-                statement.execute(insertQuery.toString());
-            }
-
-            // Execute a select query to retrieve the data as a ResultSet
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM temp_table");
-
-            // Return the ResultSet
-            return resultSet;
+        // Set column names and types
+        for (int i = 0; i < header.length; i++) {
+            resultSet.addColumn(header[i], Types.VARCHAR, 0);
         }
+
+        // Add rows to the result set
+        for (String[] row : data) {
+            resultSet.addRow(row);
+        }
+
+        // Return the ResultSet
+        return resultSet;
     }
 
     public static void main(String[] args) {
@@ -54,7 +39,7 @@ public class ResultSetCreator {
 
             // Remember to close the resultSet when you're done using it
             resultSet.close();
-        } catch (IOException | CsvException e) {
+        } catch (IOException | CsvException | SQLException e) {
             e.printStackTrace();
         }
     }
