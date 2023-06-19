@@ -1,53 +1,61 @@
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 
-import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+public class ResultSetCreator {
+    public static ResultSet createResultSetFromFile(String filePath) throws IOException, CsvException {
+        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
+            String[] header = reader.readNext();
+            String[][] data = reader.readAll();
 
-public class CsvReaderTest {
+            // Create an in-memory SQLite database
+            Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
+            Statement statement = connection.createStatement();
 
-    @Mock
-    private BufferedReader mockBufferedReader;
+            // Create a temporary table
+            StringBuilder createTableQuery = new StringBuilder("CREATE TABLE temp_table (");
+            for (String columnName : header) {
+                createTableQuery.append(columnName).append(" TEXT,");
+            }
+            createTableQuery.deleteCharAt(createTableQuery.length() - 1); // Remove the trailing comma
+            createTableQuery.append(")");
+            statement.execute(createTableQuery.toString());
 
-    @Mock
-    private FileReader mockFileReader;
+            // Insert data into the temporary table
+            for (String[] row : data) {
+                StringBuilder insertQuery = new StringBuilder("INSERT INTO temp_table VALUES (");
+                for (String value : row) {
+                    insertQuery.append("'").append(value).append("',");
+                }
+                insertQuery.deleteCharAt(insertQuery.length() - 1); // Remove the trailing comma
+                insertQuery.append(")");
+                statement.execute(insertQuery.toString());
+            }
 
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+            // Execute a select query to retrieve the data as a ResultSet
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM temp_table");
+
+            // Return the ResultSet
+            return resultSet;
+        }
     }
 
-    @Test
-    public void testReadCsv() throws IOException {
-        // Set up test data
-        String filePath = "path/to/csv/file.csv";
-        List<Map<String, String>> expectedDataList = new ArrayList<>();
-        Map<String, String> dataMap1 = new HashMap<>();
-        dataMap1.put("column1", "value1");
-        dataMap1.put("column2", "value2");
-        expectedDataList.add(dataMap1);
+    public static void main(String[] args) {
+        String filePath = "path/to/your/file.csv";
+        try {
+            ResultSet resultSet = createResultSetFromFile(filePath);
+            // Use the resultSet as needed
 
-        // Set up mocked behavior
-        when(mockFileReader.read()).thenReturn(-1);  // End of file
-        when(mockBufferedReader.readLine()).thenReturn("column1,column2", "value1,value2", null);
-
-        // Call the method under test
-        List<Map<String, String>> actualDataList = CsvReader.readCsv(filePath);
-
-        // Verify the results
-        assertEquals(expectedDataList, actualDataList);
-        verify(mockBufferedReader, times(3)).readLine();  // Verify the method was called 3 times (header + data + null)
-        verify(mockBufferedReader).close();  // Verify the BufferedReader was closed
-        verify(mockFileReader).close();  // Verify the FileReader was closed
+            // Remember to close the resultSet when you're done using it
+            resultSet.close();
+        } catch (IOException | CsvException e) {
+            e.printStackTrace();
+        }
     }
 }
-
-
