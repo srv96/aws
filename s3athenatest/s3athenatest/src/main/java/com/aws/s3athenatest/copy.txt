@@ -1,70 +1,19 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+public static ResultSet convertCSVtoResultSet(String filePath) throws IOException, CsvException, SQLException {
+        CSVReader reader = new CSVReader(new FileReader(filePath));
+        List<String[]> rows = reader.readAll();
+        reader.close();
 
-public class ResultSetFromFile {
+        String[] header = rows.get(0);
+        List<String[]> data = rows.subList(1, rows.size());
 
-    public static ResultSet createResultSetFromFile(String filePath) throws IOException, SQLException {
-        BufferedReader reader = new BufferedReader(new FileReader(filePath));
-        String line;
-        ResultSet rs = null;
-        ResultSetMetaData metaData = null;
-        int columnCount = 0;
+        // Create a custom ListResultSet
+        ListResultSet resultSet = new ListResultSet(header);
 
-        while ((line = reader.readLine()) != null) {
-            if (line.startsWith("#")) {
-                continue;
-            }
-
-            if (rs == null) {
-                // Create the ResultSet
-                rs = new ResultSet() {
-                    @Override
-                    public boolean next() throws SQLException {
-                        return reader.ready();
-                    }
-
-                    @Override
-                    public String getString(int columnIndex) throws SQLException {
-                        return line.split(",").get(columnIndex - 1);
-                    }
-
-                    @Override
-                    public int getInt(int columnIndex) throws SQLException {
-                        return Integer.parseInt(line.split(",").get(columnIndex - 1));
-                    }
-
-                    @Override
-                    public ResultSetMetaData getMetaData() throws SQLException {
-                        if (metaData == null) {
-                            metaData = new ResultSetMetaData() {
-                                @Override
-                                public int getColumnCount() throws SQLException {
-                                    return columnCount;
-                                }
-
-                                @Override
-                                public String getColumnName(int columnIndex) throws SQLException {
-                                    return "column" + (columnIndex + 1);
-                                }
-
-                                @Override
-                                public int getColumnType(int columnIndex) throws SQLException {
-                                    return java.sql.Types.VARCHAR;
-                                }
-                            };
-                            columnCount++;
-                        }
-
-                        return metaData;
-                    }
-                };
-            }
+        // Add rows to the result set
+        for (String[] row : data) {
+            resultSet.addRow(row);
         }
 
-        return rs;
+        // Return the ResultSet
+        return resultSet;
     }
-}
