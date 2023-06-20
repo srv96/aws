@@ -1,6 +1,64 @@
-GetObjectResponse dummyGetObjectResponse = GetObjectResponse.builder()
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.transfer.TransferManager;
+import software.amazon.awssdk.services.s3.transfer.Upload;
+import software.amazon.awssdk.services.s3.transfer.UploadResult;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({S3FileUploader.class, TransferManager.class})
+public class S3FileUploaderTest {
+
+    @Mock
+    private S3Client s3Client;
+
+    @Mock
+    private TransferManager transferManager;
+
+    @Mock
+    private Upload upload;
+
+    @Before
+    public void setup() throws Exception {
+        PowerMockito.mockStatic(S3Client.class);
+        when(S3Client.create()).thenReturn(s3Client);
+        when(TransferManager.create(any(S3Client.class))).thenReturn(transferManager);
+        when(transferManager.upload(any(String.class), any(String.class), any(java.io.File.class))).thenReturn(upload);
+    }
+
+    @Test
+    public void testUploadFile_Success() throws Exception {
+        // Mock the upload completion
+        when(upload.waitForCompletion()).thenReturn(null);
+
+        // Create a dummy UploadResult
+        UploadResult uploadResult = UploadResult.builder()
+                .eTag("dummy-etag")
                 .build();
-        
-        // Create a dummy ResponseInputStream
-        ResponseInputStream<GetObjectResponse> dummyResponseInputStream =
-                new ResponseInputStream<>(dummyGetObjectResponse, null);
+        when(upload.getUploadResult()).thenReturn(uploadResult);
+
+        // Call the uploadFile method
+        String bucketName = "test-bucket";
+        String key = "test-key";
+        String filePath = "dummy-file.txt";
+        UploadResult result = S3FileUploader.uploadFile(bucketName, key, filePath);
+
+        // Verify that the TransferManager and Upload objects were created and used correctly
+        verify(TransferManager.class);
+        verify(upload).waitForCompletion();
+        verify(upload).getUploadResult();
+
+        // Verify the result
+        Assert.assertEquals(uploadResult, result);
+    }
+}
