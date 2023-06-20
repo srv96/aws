@@ -1,10 +1,63 @@
-Class.forName("org.relique.jdbc.csv.CsvDriver");
+import static org.mockito.Mockito.*;
 
-// Create a connection using the directory containing the file(s)
-Connection conn = DriverManager.getConnection("jdbc:relique:csv:/path/to/files");
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-// Create a Statement object to execute the query with.
-Statement stmt = conn.createStatement();
+public class ConnectionTestClass {
 
-// Query the table. The name of the table is the name of the file without ".csv"
-ResultSet results = stmt.executeQuery("SELECT col1, col2 FROM myfile");
+    private Connection connection;
+    private Statement statement;
+    private ResultSet resultSet;
+    private ConnectionManager connectionManager;
+
+    @BeforeEach
+    public void setUp() {
+        // Create mock objects for Connection, Statement, and ResultSet
+        connection = mock(Connection.class);
+        statement = mock(Statement.class);
+        resultSet = mock(ResultSet.class);
+
+        // Create a ConnectionManager instance with the mock Connection
+        connectionManager = new ConnectionManager(connection);
+    }
+
+    @Test
+    public void testGetRecord() throws SQLException {
+        String sql = "SELECT * FROM table_name";
+
+        // Set up mock behavior for the Connection and ResultSet objects
+        when(connection.createStatement()).thenReturn(statement);
+        when(statement.executeQuery(sql)).thenReturn(resultSet);
+        when(FileUtility.convertResultSetToList(resultSet)).thenReturn(mockDataMap());
+
+        // Call the method under test
+        List<Map<String, String>> result = connectionManager.getRecord(sql);
+
+        // Verify that the methods were called on the mock objects
+        verify(connection).createStatement();
+        verify(statement).executeQuery(sql);
+        verify(FileUtility).convertResultSetToList(resultSet);
+
+        // Assert the expected result
+        assertNotNull(result);
+        // Add additional assertions based on the expected behavior of your FileUtility method
+    }
+
+    private List<Map<String, String>> mockDataMap() {
+        // Create and return a mock data map for testing purposes
+        List<Map<String, String>> dataMap = new ArrayList<>();
+
+        // Add some sample data to the map
+        Map<String, String> row1 = new HashMap<>();
+        row1.put("column1", "value1");
+        row1.put("column2", "value2");
+        dataMap.add(row1);
+
+        Map<String, String> row2 = new HashMap<>();
+        row2.put("column1", "value3");
+        row2.put("column2", "value4");
+        dataMap.add(row2);
+
+        return dataMap;
+    }
+}
