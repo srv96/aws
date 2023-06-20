@@ -1,20 +1,6 @@
-@Test
-    public void testListBucketObjects_Success() throws Exception {
-        // Mocking the client.listObjects() method
-        ListObjectsV2Response listObjectsResponse = ListObjectsV2Response.builder().build();
-        PowerMockito.when(s3Client.listObjects(Mockito.any(ListObjectsV2Request.class)))
-                .thenReturn(listObjectsResponse);
-
-        // Create a sample S3ListObjectRequest
-        S3ListObjectRequest s3ListObjectRequest = new S3ListObjectRequest();
-        s3ListObjectRequest.setBucket("my-bucket");
-
-        // Call the listBucketObjects() method
-        ListObjectsV2Response result = s3Service.listBucketObjects(s3ListObjectRequest);
-
-        // Verify that the client.listObjects() method was called with the correct arguments
-        PowerMockito.verify(s3Client).listObjects(Mockito.any(ListObjectsV2Request.class));
-
-        // Verify the result
-        Assert.assertEquals(listObjectsResponse, result);
-    }
+GetObjectResponse dummyGetObjectResponse = GetObjectResponse.builder()
+                .build();
+        
+        // Create a dummy ResponseInputStream
+        ResponseInputStream<GetObjectResponse> dummyResponseInputStream =
+                new ResponseInputStream<>(dummyGetObjectResponse, null);
