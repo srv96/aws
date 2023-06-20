@@ -1,63 +1,60 @@
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({ FileUtility.class })
 public class ConnectionTestClass {
 
-    private Connection connection;
-    private Statement statement;
-    private ResultSet resultSet;
-    private ConnectionManager connectionManager;
-
-    @BeforeEach
-    public void setUp() {
-        // Create mock objects for Connection, Statement, and ResultSet
-        connection = mock(Connection.class);
-        statement = mock(Statement.class);
-        resultSet = mock(ResultSet.class);
-
-        // Create a ConnectionManager instance with the mock Connection
-        connectionManager = new ConnectionManager(connection);
-    }
-
     @Test
-    public void testGetRecord() throws SQLException {
-        String sql = "SELECT * FROM table_name";
+    public void testGetRecord() throws Exception {
+        // Mock the Connection class
+        Connection connection = mock(Connection.class);
 
-        // Set up mock behavior for the Connection and ResultSet objects
+        // Mock the Statement, ResultSet, and FileUtility classes
+        Statement statement = mock(Statement.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        PowerMockito.mockStatic(FileUtility.class);
+
+        // Define the SQL query and expected result
+        String sql = "SELECT * FROM table";
+        List<Map<String, String>> expectedDataMap = Arrays.asList(
+                Map.of("column1", "value1"),
+                Map.of("column2", "value2")
+        );
+
+        // Define the mock behavior
         when(connection.createStatement()).thenReturn(statement);
         when(statement.executeQuery(sql)).thenReturn(resultSet);
-        when(FileUtility.convertResultSetToList(resultSet)).thenReturn(mockDataMap());
+        when(FileUtility.convertResultSetToList(resultSet)).thenReturn(expectedDataMap);
+
+        // Create an instance of the class under test
+        ConnectionClass connectionClass = new ConnectionClass();
+
+        // Set the mocked connection in the class under test
+        connectionClass.setConnection(connection);
 
         // Call the method under test
-        List<Map<String, String>> result = connectionManager.getRecord(sql);
+        List<Map<String, String>> result = connectionClass.getRecord(sql);
 
-        // Verify that the methods were called on the mock objects
+        // Verify the interactions
         verify(connection).createStatement();
         verify(statement).executeQuery(sql);
-        verify(FileUtility).convertResultSetToList(resultSet);
+        PowerMockito.verifyStatic(FileUtility.class);
+        FileUtility.convertResultSetToList(resultSet);
 
-        // Assert the expected result
-        assertNotNull(result);
-        // Add additional assertions based on the expected behavior of your FileUtility method
-    }
-
-    private List<Map<String, String>> mockDataMap() {
-        // Create and return a mock data map for testing purposes
-        List<Map<String, String>> dataMap = new ArrayList<>();
-
-        // Add some sample data to the map
-        Map<String, String> row1 = new HashMap<>();
-        row1.put("column1", "value1");
-        row1.put("column2", "value2");
-        dataMap.add(row1);
-
-        Map<String, String> row2 = new HashMap<>();
-        row2.put("column1", "value3");
-        row2.put("column2", "value4");
-        dataMap.add(row2);
-
-        return dataMap;
+        // Assert the result
+        assertEquals(expectedDataMap, result);
     }
 }
