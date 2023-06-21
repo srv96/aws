@@ -1,56 +1,65 @@
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.transfer.S3TransferManager;
+import software.amazon.awssdk.services.s3.model.*;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({S3ConnectionController.class, S3Service.class})
+@PrepareForTest({S3ConnectionController.class, S3TransferManager.class})
 public class S3ServiceTest {
-    
+
     @Mock
-    private S3Client s3ClientMock;
-    
+    private S3Client mockS3Client;
+
     @Mock
-    private S3TransferManager s3TransferManagerMock;
-    
-    @Test
-    public void testUploadFile() {
-        // Mock the static method calls
+    private S3TransferManager mockTransferManager;
+
+    private S3Service s3Service;
+
+    @Before
+    public void setUp() {
         PowerMockito.mockStatic(S3ConnectionController.class);
-        Mockito.when(S3ConnectionController.getS3ClientSession()).thenReturn(s3ClientMock);
-        Mockito.when(S3ConnectionController.getS3TransferMangerSession()).thenReturn(s3TransferManagerMock);
-        
-        // Create an instance of the S3Service
-        S3Service s3Service = new S3Service();
-        
-        // Mock the behavior of the S3TransferManager
-        UploadFileRequest mockRequest = Mockito.mock(UploadFileRequest.class);
-        FileUpload mockFileUpload = Mockito.mock(FileUpload.class);
-        CompletedFileUpload mockUploadResult = Mockito.mock(CompletedFileUpload.class);
-        Mockito.when(s3TransferManagerMock.uploadFile(Mockito.any(UploadFileRequest.class))).thenReturn(mockFileUpload);
-        Mockito.when(mockFileUpload.completionFuture()).thenReturn(CompletableFuture.completedFuture(mockUploadResult));
-        Mockito.when(mockUploadResult.response()).thenReturn(Mockito.mock(PutObjectResponse.class));
-        
-        // Call the method under test
-        String bucketName = "my-bucket";
-        String key = "my-key";
-        String filePath = "/path/to/file.txt";
-        String eTags = s3Service.uploadFile(bucketName, key, filePath);
-        
-        // Perform assertions or verifications
-        // Here, you can assert the expected behavior or verify interactions with mocks
-        
-        // For example, to verify that the uploadFile method was called with the expected arguments
-        Mockito.verify(s3TransferManagerMock).uploadFile(Mockito.any(UploadFileRequest.class));
-        
-        // You can also verify the behavior based on the returned value
-        // For example, if eTags is expected to be "ABC123"
-        Assertions.assertEquals("ABC123", eTags);
+        when(S3ConnectionController.getS3ClientSession()).thenReturn(mockS3Client);
+        when(S3ConnectionController.getS3TransferMangerSession()).thenReturn(mockTransferManager);
+
+        s3Service = new S3Service();
+    }
+
+    @Test
+    public void testCopyObject() {
+        // Mock the copy operation
+        Copy copy = PowerMockito.mock(Copy.class);
+        CompletedCopy completedCopy = CompletedCopy.builder()
+                .response(CopyObjectResponse.builder().copyObjectResult(CopyObjectResult.builder().eTag("ETAG").build()).build())
+                .build();
+
+        when(mockTransferManager.copy(any(CopyRequest.class))).thenReturn(copy);
+        when(copy.completionFuture()).thenReturn(completedCopy);
+
+        // Test data
+        String bucketName = "sourceBucket";
+        String key = "sourceKey";
+        String destinationBucket = "destinationBucket";
+        String destinationKey = "destinationKey";
+
+        // Perform the copy operation
+        String eTag = s3Service.copyObject(bucketName, key, destinationBucket, destinationKey);
+
+        // Verify the interactions and assertions
+        Assert.assertEquals("ETAG", eTag);
+        PowerMockito.verifyStatic(S3ConnectionController.class);
+        S3ConnectionController.getS3ClientSession();
+        PowerMockito.verifyStatic(S3ConnectionController.class);
+        S3ConnectionController.getS3TransferMangerSession();
+        PowerMockito.verify(mockTransferManager).copy(any(CopyRequest.class));
+        PowerMockito.verify(copy).completionFuture();
     }
 }
