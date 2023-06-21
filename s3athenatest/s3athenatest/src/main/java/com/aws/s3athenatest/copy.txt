@@ -1,64 +1,62 @@
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.*;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
+import org.powermock.api.mockito.*;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.transfer.TransferManager;
-import software.amazon.awssdk.services.s3.transfer.Upload;
-import software.amazon.awssdk.services.s3.transfer.UploadResult;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import software.amazon.awssdk.services.s3.transfer.*;
+import software.amazon.awssdk.services.s3.transfer.internal.*;
+import software.amazon.awssdk.services.s3.model.*;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({S3FileUploader.class, TransferManager.class})
-public class S3FileUploaderTest {
-
-    @Mock
-    private S3Client s3Client;
-
-    @Mock
-    private TransferManager transferManager;
-
-    @Mock
-    private Upload upload;
-
-    @Before
-    public void setup() throws Exception {
-        PowerMockito.mockStatic(S3Client.class);
-        when(S3Client.create()).thenReturn(s3Client);
-        when(TransferManager.create(any(S3Client.class))).thenReturn(transferManager);
-        when(transferManager.upload(any(String.class), any(String.class), any(java.io.File.class))).thenReturn(upload);
-    }
-
+@PrepareForTest({ Path.class, TransferManager.class })
+public class FileUploaderTest {
+    
     @Test
-    public void testUploadFile_Success() throws Exception {
-        // Mock the upload completion
-        when(upload.waitForCompletion()).thenReturn(null);
-
-        // Create a dummy UploadResult
-        UploadResult uploadResult = UploadResult.builder()
-                .eTag("dummy-etag")
-                .build();
-        when(upload.getUploadResult()).thenReturn(uploadResult);
-
-        // Call the uploadFile method
+    public void testUploadFile() throws Exception {
+        // Mock the required classes
+        Path pathMock = mock(Path.class);
+        TransferManager transferManagerMock = mock(TransferManager.class);
+        FileUpload fileUploadMock = mock(FileUpload.class);
+        CompletedFileUpload completedFileUploadMock = mock(CompletedFileUpload.class);
+        Response responseMock = mock(Response.class);
+        
+        // Mock static methods
+        PowerMockito.mockStatic(Path.class);
+        PowerMockito.mockStatic(TransferManager.class);
+        
+        // Create a test instance
+        FileUploader fileUploader = new FileUploader();
+        
+        // Prepare test data
         String bucketName = "test-bucket";
         String key = "test-key";
-        String filePath = "dummy-file.txt";
-        UploadResult result = S3FileUploader.uploadFile(bucketName, key, filePath);
-
-        // Verify that the TransferManager and Upload objects were created and used correctly
-        verify(TransferManager.class);
-        verify(upload).waitForCompletion();
-        verify(upload).getUploadResult();
-
-        // Verify the result
-        Assert.assertEquals(uploadResult, result);
+        String filePath = "test-file-path";
+        String eTag = "test-etag";
+        
+        // Mock static method calls
+        when(Path.get(filePath)).thenReturn(pathMock);
+        when(TransferManager.create()).thenReturn(transferManagerMock);
+        
+        // Mock instance method calls
+        when(transferManagerMock.uploadFile(any(UploadFileRequest.class))).thenReturn(fileUploadMock);
+        when(fileUploadMock.completionFuture()).thenReturn(completedFileUploadMock);
+        when(completedFileUploadMock.response()).thenReturn(responseMock);
+        when(responseMock.eTags()).thenReturn(eTag);
+        
+        // Invoke the method under test
+        String result = fileUploader.uploadFile(bucketName, key, filePath);
+        
+        // Verify the method calls
+        verify(pathMock).get(filePath);
+        verify(TransferManager.create()).uploadFile(any(UploadFileRequest.class));
+        verify(fileUploadMock).completionFuture();
+        verify(completedFileUploadMock).response();
+        verify(responseMock).eTags();
+        
+        // Verify the expected result
+        Assert.assertEquals(eTag, result);
     }
 }
