@@ -1,8 +1,8 @@
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.MockitoAnnotations;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -14,8 +14,10 @@ import software.amazon.awssdk.services.s3.transfer.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.transfer.model.CopyRequest;
 import software.amazon.awssdk.services.s3.transfer.model.CopyResult;
 
+import static org.mockito.Mockito.*;
+
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({S3ConnectionController.class, S3Service.class})
+@PrepareForTest(S3Service.class)
 public class S3ServiceTest {
 
     @Mock
@@ -24,41 +26,53 @@ public class S3ServiceTest {
     @Mock
     private S3TransferManager s3TransferManagerMock;
 
-    @Test
-    public void testCopyObject() {
+    private S3Service s3Service;
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+
         // Mock the static method calls
-        PowerMockito.mockStatic(S3ConnectionController.class);
-        Mockito.when(S3ConnectionController.getS3ClientSession()).thenReturn(s3ClientMock);
-        Mockito.when(S3ConnectionController.getS3TransferMangerSession()).thenReturn(s3TransferManagerMock);
+        mockStatic(S3ConnectionController.class);
+        when(S3ConnectionController.getS3ClientSession()).thenReturn(s3ClientMock);
+        when(S3ConnectionController.getS3TransferMangerSession()).thenReturn(s3TransferManagerMock);
 
         // Create an instance of the S3Service
-        S3Service s3Service = new S3Service();
+        s3Service = new S3Service();
+    }
 
+    @Test
+    public void testCopyObject() {
         // Mock the behavior of the S3TransferManager
-        CopyObjectRequest mockCopyObjectRequest = Mockito.mock(CopyObjectRequest.class);
-        CopyRequest mockCopyRequest = Mockito.mock(CopyRequest.class);
-        Copy mockCopy = Mockito.mock(CopyImpl.class);
-        CompletedCopy mockCompletedCopy = Mockito.mock(CompletedCopy.class);
-        CopyResult mockCopyResult = Mockito.mock(CopyResult.class);
+        CopyObjectRequest mockCopyObjectRequest = CopyObjectRequest.builder()
+                .sourceBucket("source-bucket")
+                .sourceKey("source-key")
+                .destinationBucket("destination-bucket")
+                .destinationKey("destination-key")
+                .build();
 
-        Mockito.when(s3TransferManagerMock.copy(Mockito.any(CopyRequest.class))).thenReturn(mockCopy);
-        Mockito.when(mockCopy.completionFuture()).thenReturn(CompletableFuture.completedFuture(mockCompletedCopy));
-        Mockito.when(mockCompletedCopy.response()).thenReturn(mockCopyResult);
-        Mockito.when(mockCopyResult.copyObjectResult()).thenReturn(Mockito.mock(CopyObjectResult.class));
-        Mockito.when(mockCopyResult.copyObjectResult().eTag()).thenReturn("ABC123");
+        CopyRequest mockCopyRequest = CopyRequest.builder()
+                .copyObjectRequest(mockCopyObjectRequest)
+                .build();
+
+        Copy mockCopy = mock(CopyImpl.class);
+        CompletedCopy mockCompletedCopy = mock(CompletedCopy.class);
+        CopyResult mockCopyResult = mock(CopyResult.class);
+
+        when(s3TransferManagerMock.copy(mockCopyRequest)).thenReturn(mockCopy);
+        when(mockCopy.completionFuture()).thenReturn(CompletableFuture.completedFuture(mockCompletedCopy));
+        when(mockCompletedCopy.response()).thenReturn(mockCopyResult);
+        when(mockCopyResult.copyObjectResult()).thenReturn(mock(CopyObjectResult.class));
+        when(mockCopyResult.copyObjectResult().eTag()).thenReturn("ABC123");
 
         // Call the method under test
-        String sourceBucket = "source-bucket";
-        String sourceKey = "source-key";
-        String destinationBucket = "destination-bucket";
-        String destinationKey = "destination-key";
-        String eTag = s3Service.copyObject(sourceBucket, sourceKey, destinationBucket, destinationKey);
+        String eTag = s3Service.copyObject("source-bucket", "source-key", "destination-bucket", "destination-key");
 
         // Perform assertions or verifications
         // Here, you can assert the expected behavior or verify interactions with mocks
 
         // For example, to verify that the copy method was called with the expected arguments
-        Mockito.verify(s3TransferManagerMock).copy(Mockito.any(CopyRequest.class));
+        verify(s3TransferManagerMock).copy(mockCopyRequest);
 
         // You can also verify the behavior based on the returned value
         // For example, if eTag is expected to be "ABC123"
