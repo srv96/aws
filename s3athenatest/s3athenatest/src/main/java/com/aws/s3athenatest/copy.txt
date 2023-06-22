@@ -1,81 +1,98 @@
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.transfer.S3TransferManager;
-import software.amazon.awssdk.services.s3.transfer.internal.CopyImpl;
-import software.amazon.awssdk.services.s3.transfer.model.CompletedCopy;
-import software.amazon.awssdk.services.s3.transfer.model.Copy;
-import software.amazon.awssdk.services.s3.transfer.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.transfer.model.CopyRequest;
-import software.amazon.awssdk.services.s3.transfer.model.CopyResult;
+public class DummyClass {
+    private int id;
+    private String name;
+    private double price;
+    private boolean available;
 
-import static org.mockito.Mockito.*;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(S3Service.class)
-public class S3ServiceTest {
-
-    @Mock
-    private S3Client s3ClientMock;
-
-    @Mock
-    private S3TransferManager s3TransferManagerMock;
-
-    private S3Service s3Service;
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
-        // Mock the static method calls
-        mockStatic(S3ConnectionController.class);
-        when(S3ConnectionController.getS3ClientSession()).thenReturn(s3ClientMock);
-        when(S3ConnectionController.getS3TransferMangerSession()).thenReturn(s3TransferManagerMock);
-
-        // Create an instance of the S3Service
-        s3Service = new S3Service();
+    public DummyClass() {
+        // Default constructor
     }
 
-    @Test
-    public void testCopyObject() {
-        // Mock the behavior of the S3TransferManager
-        CopyObjectRequest mockCopyObjectRequest = CopyObjectRequest.builder()
-                .sourceBucket("source-bucket")
-                .sourceKey("source-key")
-                .destinationBucket("destination-bucket")
-                .destinationKey("destination-key")
-                .build();
+    public DummyClass(int id, String name, double price, boolean available) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.available = available;
+    }
 
-        CopyRequest mockCopyRequest = CopyRequest.builder()
-                .copyObjectRequest(mockCopyObjectRequest)
-                .build();
+    // Getters and setters
+    public int getId() {
+        return id;
+    }
 
-        Copy mockCopy = mock(CopyImpl.class);
-        CompletedCopy mockCompletedCopy = mock(CompletedCopy.class);
-        CopyResult mockCopyResult = mock(CopyResult.class);
+    public void setId(int id) {
+        this.id = id;
+    }
 
-        when(s3TransferManagerMock.copy(mockCopyRequest)).thenReturn(mockCopy);
-        when(mockCopy.completionFuture()).thenReturn(CompletableFuture.completedFuture(mockCompletedCopy));
-        when(mockCompletedCopy.response()).thenReturn(mockCopyResult);
-        when(mockCopyResult.copyObjectResult()).thenReturn(mock(CopyObjectResult.class));
-        when(mockCopyResult.copyObjectResult().eTag()).thenReturn("ABC123");
+    public String getName() {
+        return name;
+    }
 
-        // Call the method under test
-        String eTag = s3Service.copyObject("source-bucket", "source-key", "destination-bucket", "destination-key");
+    public void setName(String name) {
+        this.name = name;
+    }
 
-        // Perform assertions or verifications
-        // Here, you can assert the expected behavior or verify interactions with mocks
+    public double getPrice() {
+        return price;
+    }
 
-        // For example, to verify that the copy method was called with the expected arguments
-        verify(s3TransferManagerMock).copy(mockCopyRequest);
+    public void setPrice(double price) {
+        this.price = price;
+    }
 
-        // You can also verify the behavior based on the returned value
-        // For example, if eTag is expected to be "ABC123"
-        Assertions.assertEquals("ABC123", eTag);
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
+    }
+
+    // Override toString() method for debugging purposes
+    @Override
+    public String toString() {
+        return "DummyClass{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", available=" + available +
+                '}';
     }
 }
+
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class DummyClassTest {
+
+    @Test
+    public void testDummyClass() {
+        // Create a DummyClass object
+        DummyClass dummy = new DummyClass(1, "Dummy Object", 9.99, true);
+
+        // Test the getters
+        Assertions.assertEquals(1, dummy.getId());
+        Assertions.assertEquals("Dummy Object", dummy.getName());
+        Assertions.assertEquals(9.99, dummy.getPrice());
+        Assertions.assertTrue(dummy.isAvailable());
+
+        // Test the setters
+        dummy.setId(2);
+        dummy.setName("Updated Dummy Object");
+        dummy.setPrice(19.99);
+        dummy.setAvailable(false);
+
+        // Test the updated values
+        Assertions.assertEquals(2, dummy.getId());
+        Assertions.assertEquals("Updated Dummy Object", dummy.getName());
+        Assertions.assertEquals(19.99, dummy.getPrice());
+        Assertions.assertFalse(dummy.isAvailable());
+
+        // Test the toString() method
+        String expectedString = "DummyClass{id=2, name='Updated Dummy Object', price=19.99, available=false}";
+        Assertions.assertEquals(expectedString, dummy.toString());
+    }
+}
+
+
