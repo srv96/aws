@@ -1,98 +1,76 @@
-public class DummyClass {
-    private int id;
-    private String name;
-    private double price;
-    private boolean available;
+import lombok.NonNull;
 
-    public DummyClass() {
-        // Default constructor
+public class DummyPojo {
+    @NonNull
+    private String arg1;
+    @NonNull
+    private String arg2;
+    private int arg3;
+    private boolean arg4;
+
+    public DummyPojo(String arg1, String arg2, int arg3, boolean arg4) {
+        this.arg1 = arg1;
+        this.arg2 = arg2;
+        this.arg3 = arg3;
+        this.arg4 = arg4;
     }
 
-    public DummyClass(int id, String name, double price, boolean available) {
-        this.id = id;
-        this.name = name;
-        this.price = price;
-        this.available = available;
+    public String getArg1() {
+        return arg1;
     }
 
-    // Getters and setters
-    public int getId() {
-        return id;
+    public void setArg1(String arg1) {
+        this.arg1 = arg1;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public String getArg2() {
+        return arg2;
     }
 
-    public String getName() {
-        return name;
+    public void setArg2(String arg2) {
+        this.arg2 = arg2;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public int getArg3() {
+        return arg3;
     }
 
-    public double getPrice() {
-        return price;
+    public void setArg3(int arg3) {
+        this.arg3 = arg3;
     }
 
-    public void setPrice(double price) {
-        this.price = price;
+    public boolean isArg4() {
+        return arg4;
     }
 
-    public boolean isAvailable() {
-        return available;
-    }
-
-    public void setAvailable(boolean available) {
-        this.available = available;
-    }
-
-    // Override toString() method for debugging purposes
-    @Override
-    public String toString() {
-        return "DummyClass{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", price=" + price +
-                ", available=" + available +
-                '}';
+    public void setArg4(boolean arg4) {
+        this.arg4 = arg4;
     }
 }
 
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
-public class DummyClassTest {
+import org.junit.Assert;
+import org.junit.Test;
+
+public class DummyPojoTest {
 
     @Test
-    public void testDummyClass() {
-        // Create a DummyClass object
-        DummyClass dummy = new DummyClass(1, "Dummy Object", 9.99, true);
+    public void testDummyPojo() {
+        String arg1 = "Value1";
+        String arg2 = "Value2";
+        int arg3 = 10;
+        boolean arg4 = true;
 
-        // Test the getters
-        Assertions.assertEquals(1, dummy.getId());
-        Assertions.assertEquals("Dummy Object", dummy.getName());
-        Assertions.assertEquals(9.99, dummy.getPrice());
-        Assertions.assertTrue(dummy.isAvailable());
+        DummyPojo dummyPojo = new DummyPojo(arg1, arg2, arg3, arg4);
 
-        // Test the setters
-        dummy.setId(2);
-        dummy.setName("Updated Dummy Object");
-        dummy.setPrice(19.99);
-        dummy.setAvailable(false);
+        Assert.assertEquals(arg1, dummyPojo.getArg1());
+        Assert.assertEquals(arg2, dummyPojo.getArg2());
+        Assert.assertEquals(arg3, dummyPojo.getArg3());
+        Assert.assertEquals(arg4, dummyPojo.isArg4());
 
-        // Test the updated values
-        Assertions.assertEquals(2, dummy.getId());
-        Assertions.assertEquals("Updated Dummy Object", dummy.getName());
-        Assertions.assertEquals(19.99, dummy.getPrice());
-        Assertions.assertFalse(dummy.isAvailable());
-
-        // Test the toString() method
-        String expectedString = "DummyClass{id=2, name='Updated Dummy Object', price=19.99, available=false}";
-        Assertions.assertEquals(expectedString, dummy.toString());
+        String newArg1 = "NewValue1";
+        dummyPojo.setArg1(newArg1);
+        Assert.assertEquals(newArg1, dummyPojo.getArg1());
     }
 }
-
-
