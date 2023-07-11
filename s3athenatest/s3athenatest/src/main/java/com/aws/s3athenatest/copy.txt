@@ -1,76 +1,15 @@
-import lombok.NonNull;
-
-public class DummyPojo {
-    @NonNull
-    private String arg1;
-    @NonNull
-    private String arg2;
-    private int arg3;
-    private boolean arg4;
-
-    public DummyPojo(String arg1, String arg2, int arg3, boolean arg4) {
-        this.arg1 = arg1;
-        this.arg2 = arg2;
-        this.arg3 = arg3;
-        this.arg4 = arg4;
-    }
-
-    public String getArg1() {
-        return arg1;
-    }
-
-    public void setArg1(String arg1) {
-        this.arg1 = arg1;
-    }
-
-    public String getArg2() {
-        return arg2;
-    }
-
-    public void setArg2(String arg2) {
-        this.arg2 = arg2;
-    }
-
-    public int getArg3() {
-        return arg3;
-    }
-
-    public void setArg3(int arg3) {
-        this.arg3 = arg3;
-    }
-
-    public boolean isArg4() {
-        return arg4;
-    }
-
-    public void setArg4(boolean arg4) {
-        this.arg4 = arg4;
-    }
-}
-
-
-
-import org.junit.Assert;
-import org.junit.Test;
-
-public class DummyPojoTest {
-
-    @Test
-    public void testDummyPojo() {
-        String arg1 = "Value1";
-        String arg2 = "Value2";
-        int arg3 = 10;
-        boolean arg4 = true;
-
-        DummyPojo dummyPojo = new DummyPojo(arg1, arg2, arg3, arg4);
-
-        Assert.assertEquals(arg1, dummyPojo.getArg1());
-        Assert.assertEquals(arg2, dummyPojo.getArg2());
-        Assert.assertEquals(arg3, dummyPojo.getArg3());
-        Assert.assertEquals(arg4, dummyPojo.isArg4());
-
-        String newArg1 = "NewValue1";
-        dummyPojo.setArg1(newArg1);
-        Assert.assertEquals(newArg1, dummyPojo.getArg1());
-    }
-}
+CREATE TABLE ns_ptt_omrap_mdr.group_entity_realtime_ingestion_history (
+    rowkey VARCHAR,
+    data_sync_mode VARCHAR,
+    entity_mapping VARCHAR,
+    execution_status VARCHAR,
+    frequency_in_minutes VARCHAR,
+    group_id VARCHAR,
+    group_name VARCHAR,
+    group_pipeline VARCHAR,
+    group_run_type VARCHAR,
+    group_status VARCHAR,
+    kafka_topic_name VARCHAR,
+    reference_group_name VARCHAR,
+    run_number VARCHAR
+);
