@@ -1,15 +1,3 @@
-CREATE TABLE ns_ptt_omrap_mdr.group_entity_realtime_ingestion_history (
-    rowkey VARCHAR,
-    data_sync_mode VARCHAR,
-    entity_mapping VARCHAR,
-    execution_status VARCHAR,
-    frequency_in_minutes VARCHAR,
-    group_id VARCHAR,
-    group_name VARCHAR,
-    group_pipeline VARCHAR,
-    group_run_type VARCHAR,
-    group_status VARCHAR,
-    kafka_topic_name VARCHAR,
-    reference_group_name VARCHAR,
-    run_number VARCHAR
-);
+public static String convertDatasetToJson(Dataset<Row> dataset) {
+        return dataset.toJSON().collectAsList().toString();
+    }
