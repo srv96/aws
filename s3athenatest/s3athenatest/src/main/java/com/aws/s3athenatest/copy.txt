@@ -1,49 +1,60 @@
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 
-public class HadoopFileDownloader {
-    public static void downloadHadoopFileToLocal(String hadoopPathStr, String localPathStr) throws IOException {
+public class ParallelHadoopFileDownloader {
+    public static void downloadHadoopFilesInParallel(String hadoopDir, String localDir) throws InterruptedException, ExecutionException, IOException {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
 
-        Path hadoopPath = new Path(hadoopPathStr);
-        Path localPath = new Path(localPathStr);
+        Path hadoopPath = new Path(hadoopDir);
+        FileStatus[] fileStatuses = fs.listStatus(hadoopPath);
 
-        // Check if the Hadoop path exists
-        if (!fs.exists(hadoopPath)) {
-            System.err.println("Hadoop path does not exist: " + hadoopPathStr);
-            fs.close();
-            return;
+        ExecutorService executorService = Executors.newFixedThreadPool(5); // Number of threads for parallel download
+
+        List<Future<Void>> futures = new ArrayList<>();
+
+        for (FileStatus fileStatus : fileStatuses) {
+            if (fileStatus.isFile()) {
+                Path filePath = fileStatus.getPath();
+                String fileName = filePath.getName();
+                String localFilePath = localDir + "/" + fileName;
+
+                futures.add(executorService.submit(() -> {
+                    fs.copyToLocalFile(false, filePath, new Path(localFilePath));
+                    System.out.println("Downloaded: " + filePath.toString());
+                    return null;
+                }));
+            }
         }
 
-        // Check if the local path exists
-        if (fs.exists(localPath)) {
-            System.err.println("Local path already exists: " + localPathStr);
-            fs.close();
-            return;
+        // Wait for all tasks to complete
+        for (Future<Void> future : futures) {
+            future.get();
         }
 
-        // Download the file from Hadoop to the local machine
-        FileUtil.copy(fs, hadoopPath, FileSystem.getLocal(conf), localPath, false, conf);
-
-        System.out.println("File downloaded successfully to: " + localPathStr);
+        executorService.shutdown();
         fs.close();
+
+        System.out.println("All files downloaded successfully to: " + localDir);
     }
 
     public static void main(String[] args) {
-        // Replace these paths with your desired Hadoop and local paths
-        String hadoopPathStr = "/path/to/hadoop/file.txt";
-        String localPathStr = "/path/to/local/destination/file.txt";
+        // Replace these paths with your desired Hadoop directory and local destination directory
+        String hadoopDir = "/path/to/hadoop/directory";
+        String localDir = "/path/to/local/destination";
 
         try {
-            downloadHadoopFileToLocal(hadoopPathStr, localPathStr);
-        } catch (IOException e) {
+            downloadHadoopFilesInParallel(hadoopDir, localDir);
+        } catch (IOException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
     }
 }
+
