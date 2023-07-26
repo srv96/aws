@@ -1,60 +1,47 @@
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.Map;
 
-public class ParallelHadoopFileDownloader {
-    public static void downloadHadoopFilesInParallel(String hadoopDir, String localDir) throws InterruptedException, ExecutionException, IOException {
-        Configuration conf = new Configuration();
-        FileSystem fs = FileSystem.get(conf);
+public class FileDownloader {
 
-        Path hadoopPath = new Path(hadoopDir);
-        FileStatus[] fileStatuses = fs.listStatus(hadoopPath);
+    // Method to accept the Map representing file paths and download status
+    public static void monitorDownloadStatus(Map<String, Boolean> downloadStatusMap) {
+        // Count the total number of files and the number of downloaded files
+        int totalFiles = downloadStatusMap.size();
+        int downloadedFiles = 0;
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5); // Number of threads for parallel download
-
-        List<Future<Void>> futures = new ArrayList<>();
-
-        for (FileStatus fileStatus : fileStatuses) {
-            if (fileStatus.isFile()) {
-                Path filePath = fileStatus.getPath();
-                String fileName = filePath.getName();
-                String localFilePath = localDir + "/" + fileName;
-
-                futures.add(executorService.submit(() -> {
-                    fs.copyToLocalFile(false, filePath, new Path(localFilePath));
-                    System.out.println("Downloaded: " + filePath.toString());
-                    return null;
-                }));
+        for (boolean isDownloaded : downloadStatusMap.values()) {
+            if (isDownloaded) {
+                downloadedFiles++;
             }
         }
 
-        // Wait for all tasks to complete
-        for (Future<Void> future : futures) {
-            future.get();
+        boolean allFilesDownloaded = false;
+        while (!allFilesDownloaded) {
+            // Calculate and display the download progress
+            double progressPercentage = (downloadedFiles * 100.0) / totalFiles;
+            System.out.println("Download Progress: " + progressPercentage + "%");
+
+            // Check if all files are downloaded
+            if (downloadedFiles == totalFiles) {
+                allFilesDownloaded = true;
+            } else {
+                // Sleep for 10 seconds before checking again
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                // Update the number of downloaded files
+                downloadedFiles = 0;
+                for (boolean isDownloaded : downloadStatusMap.values()) {
+                    if (isDownloaded) {
+                        downloadedFiles++;
+                    }
+                }
+            }
         }
 
-        executorService.shutdown();
-        fs.close();
-
-        System.out.println("All files downloaded successfully to: " + localDir);
-    }
-
-    public static void main(String[] args) {
-        // Replace these paths with your desired Hadoop directory and local destination directory
-        String hadoopDir = "/path/to/hadoop/directory";
-        String localDir = "/path/to/local/destination";
-
-        try {
-            downloadHadoopFilesInParallel(hadoopDir, localDir);
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        System.out.println("All files downloaded!");
     }
 }
-
