@@ -1,11 +1,12 @@
 
-
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.hadoop.fs.FileStatus;
 
 public class FileDownloader {
 
-    // Method to accept the Map representing file paths and download status
-    public static void monitorDownloadStatus(Map<String, Boolean> downloadStatusMap) {
+    // Method to accept the Map representing file status and download status
+    public static void monitorDownloadStatus(Map<FileStatus, Boolean> downloadStatusMap) {
         int totalFiles = downloadStatusMap.size();
 
         while (downloadStatusMap.values().stream().filter(Boolean::booleanValue).count() < totalFiles) {
@@ -23,8 +24,15 @@ public class FileDownloader {
     }
 
     public static void main(String[] args) {
-        // Assume you have a downloadStatusMap with file paths and their download status
-        Map<String, Boolean> downloadStatusMap = ...; // Populate the map here
+        // Assume you have a downloadStatusMap with FileStatus and their download status
+        Map<FileStatus, Boolean> downloadStatusMap = new HashMap<>();
+
+        // Populate the downloadStatusMap here with FileStatus objects and their download status
+        // For example:
+        // downloadStatusMap.put(fileStatus1, true);
+        // downloadStatusMap.put(fileStatus2, false);
+        // downloadStatusMap.put(fileStatus3, true);
+        // Add more FileStatus and their status as needed
 
         // Create a new thread to run the monitoring code
         Thread monitoringThread = new Thread(() -> monitorDownloadStatus(downloadStatusMap));
