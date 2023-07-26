@@ -5,40 +5,16 @@ public class FileDownloader {
 
     // Method to accept the Map representing file paths and download status
     public static void monitorDownloadStatus(Map<String, Boolean> downloadStatusMap) {
-        // Count the total number of files and the number of downloaded files
         int totalFiles = downloadStatusMap.size();
-        int downloadedFiles = 0;
 
-        for (boolean isDownloaded : downloadStatusMap.values()) {
-            if (isDownloaded) {
-                downloadedFiles++;
-            }
-        }
-
-        boolean allFilesDownloaded = false;
-        while (!allFilesDownloaded) {
-            // Calculate and display the download progress
-            double progressPercentage = (downloadedFiles * 100.0) / totalFiles;
+        while (downloadStatusMap.values().stream().filter(Boolean::booleanValue).count() < totalFiles) {
+            double progressPercentage = (downloadStatusMap.values().stream().filter(Boolean::booleanValue).count() * 100.0) / totalFiles;
             System.out.println("Download Progress: " + progressPercentage + "%");
 
-            // Check if all files are downloaded
-            if (downloadedFiles == totalFiles) {
-                allFilesDownloaded = true;
-            } else {
-                // Sleep for 10 seconds before checking again
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                // Update the number of downloaded files
-                downloadedFiles = 0;
-                for (boolean isDownloaded : downloadStatusMap.values()) {
-                    if (isDownloaded) {
-                        downloadedFiles++;
-                    }
-                }
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
