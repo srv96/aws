@@ -1,49 +1,32 @@
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
-import org.apache.hadoop.fs.Path;
 
-import java.io.IOException;
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-public class HadoopFileDownloader {
-    public static void downloadHadoopFileToLocal(String hadoopPathStr, String localPathStr) throws IOException {
-        Configuration conf = new Configuration();
-        FileSystem fs = FileSystem.get(conf);
+    <modelVersion>4.0.0</modelVersion>
 
-        Path hadoopPath = new Path(hadoopPathStr);
-        Path localPath = new Path(localPathStr);
+    <groupId>com.example</groupId>
+    <artifactId>hadoop-file-downloader</artifactId>
+    <version>1.0-SNAPSHOT</version>
 
-        // Check if the Hadoop path exists
-        if (!fs.exists(hadoopPath)) {
-            System.err.println("Hadoop path does not exist: " + hadoopPathStr);
-            fs.close();
-            return;
-        }
+    <properties>
+        <hadoop.version>3.2.2</hadoop.version> <!-- Replace this with the version of Hadoop you are using -->
+    </properties>
 
-        // Check if the local path exists
-        if (fs.exists(localPath)) {
-            System.err.println("Local path already exists: " + localPathStr);
-            fs.close();
-            return;
-        }
+    <dependencies>
+        <!-- Hadoop dependencies -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
 
-        // Download the file from Hadoop to the local machine
-        FileUtil.copy(fs, hadoopPath, FileSystem.getLocal(conf), localPath, false, conf);
+        <!-- Other dependencies, if needed -->
+    </dependencies>
 
-        System.out.println("File downloaded successfully to: " + localPathStr);
-        fs.close();
-    }
-
-    public static void main(String[] args) {
-        // Replace these paths with your desired Hadoop and local paths
-        String hadoopPathStr = "/path/to/hadoop/file.txt";
-        String localPathStr = "/path/to/local/destination/file.txt";
-
-        try {
-            downloadHadoopFileToLocal(hadoopPathStr, localPathStr);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
-
+</project>
