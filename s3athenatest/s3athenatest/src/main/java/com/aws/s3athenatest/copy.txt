@@ -1,4 +1,5 @@
 
+
 import java.util.Map;
 
 public class FileDownloader {
@@ -19,5 +20,23 @@ public class FileDownloader {
         }
 
         System.out.println("All files downloaded!");
+    }
+
+    public static void main(String[] args) {
+        // Assume you have a downloadStatusMap with file paths and their download status
+        Map<String, Boolean> downloadStatusMap = ...; // Populate the map here
+
+        // Create a new thread to run the monitoring code
+        Thread monitoringThread = new Thread(() -> monitorDownloadStatus(downloadStatusMap));
+        monitoringThread.start();
+
+        // Perform other tasks here...
+
+        // Wait for the monitoring thread to finish (optional)
+        try {
+            monitoringThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
