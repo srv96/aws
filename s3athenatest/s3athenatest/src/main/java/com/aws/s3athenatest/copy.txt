@@ -1,36 +1,24 @@
-
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.example.GroupWriteSupport;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public class ParquetConverter {
 
-    public InputStream convertListToParquetInputStream(List<String> stringList, String schema) throws IOException {
-        Configuration conf = new Configuration();
-        GroupWriteSupport.setSchema(new org.apache.avro.Schema.Parser().parse(schema), conf);
+    public static InputStream convertListToParquetInputStream(List<String> dataList, String schema) throws IOException {
+        SimpleGroupFactory groupFactory = new SimpleGroupFactory(GroupWriteSupport.getSchemaFromString(schema));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        try (ParquetWriter<Group> writer = new ParquetWriter<>(
-                new Path("temp.parquet"), // Temporarily write to a file (you can change the path as needed)
-                new GroupWriteSupport(),
-                CompressionCodecName.GZIP,
-                128 * 1024,
-                1 * 1024 * 1024,
-                512,
-                true,
-                false,
-                ParquetProperties.WriterVersion.PARQUET_1_0,
-                conf)) {
-
-            SimpleGroupFactory groupFactory = new SimpleGroupFactory(GroupWriteSupport.getSchema(conf));
-
-            for (String str : stringList) {
+        try (ParquetWriter<Group> writer = new ParquetWriter<>(new ParquetWriter.Builder<>(new org.apache.hadoop.fs.Path("dummy"), groupFactory), new GroupWriteSupport())) {
+            for (String data : dataList) {
                 Group group = groupFactory.newGroup();
-                group.append("data", str);
+                group.append("data", data);
                 writer.write(group);
             }
         }
@@ -40,12 +28,11 @@ public class ParquetConverter {
 
     // Example usage
     public static void main(String[] args) {
-        List<String> stringList = Arrays.asList("Hello", "World");
-        String schema = "message example { required binary data; }";
+        List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
+        String parquetSchema = "message data { required binary data; }";
 
         try {
-            ParquetConverter converter = new ParquetConverter();
-            InputStream parquetInputStream = converter.convertListToParquetInputStream(stringList, schema);
+            InputStream parquetInputStream = convertListToParquetInputStream(dataList, parquetSchema);
             // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
