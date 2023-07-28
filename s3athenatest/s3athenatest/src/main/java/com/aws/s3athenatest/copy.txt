@@ -1,9 +1,13 @@
 
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.*;
-import org.apache.arrow.vector.ipc.ArrowFileWriter;
-import org.apache.arrow.vector.types.pojo.*;
+
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.io.DatumWriter;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,48 +18,28 @@ import java.util.List;
 public class ParquetConverter {
 
     public static InputStream convertListToParquetInputStream(List<String> dataList, Schema schema) throws IOException {
-        try (BufferAllocator allocator = new RootAllocator()) {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            try (VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator);
-                 ArrowFileWriter writer = new ArrowFileWriter(root, null, Channels.newChannel(outputStream))) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-                List<FieldVector> vectors = root.getFieldVectors();
-                for (FieldVector vector : vectors) {
-                    vector.allocateNew();
-                }
-
-                for (String data : dataList) {
-                    for (int i = 0; i < vectors.size(); i++) {
-                        String value = (String) data; // Assuming that the dataList contains strings
-                        FieldVector vector = vectors.get(i);
-                        if (vector instanceof VarCharVector) {
-                            VarCharVector charVector = (VarCharVector) vector;
-                            byte[] bytes = value.getBytes();
-                            charVector.setSafe(0, bytes);
-                            charVector.setValueCount(1);
-                        } else {
-                            // Handle other types as per your schema requirements
-                        }
-                    }
-                    root.setRowCount(1);
-                    writer.writeBatch();
-                }
-
-                writer.end();
+        try (DataFileWriter<GenericData.Record> avroWriter = new DataFileWriter<>(new GenericDatumWriter<>(schema))) {
+            avroWriter.create(schema, outputStream);
+            for (String data : dataList) {
+                GenericData.Record record = new GenericData.Record(schema);
+                record.put("data", data);
+                avroWriter.append(record);
             }
-
-            return new ByteArrayInputStream(outputStream.toByteArray());
         }
+
+        return new ByteArrayInputStream(outputStream.toByteArray());
     }
 
     // Example usage
     public static void main(String[] args) {
         List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
-        Field field = new Field("data", FieldType.nullable(new ArrowType.Utf8()), null);
-        Schema schema = new Schema(List.of(field));
+        String avroSchemaJson = "{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}";
+        Schema avroSchema = new Schema.Parser().parse(avroSchemaJson);
 
         try {
-            InputStream parquetInputStream = convertListToParquetInputStream(dataList, schema);
+            InputStream parquetInputStream = convertListToParquetInputStream(dataList, avroSchema);
             // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
