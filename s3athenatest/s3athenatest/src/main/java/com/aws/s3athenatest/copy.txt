@@ -1,50 +1,34 @@
 
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.hadoop.fs.FileStatus;
+import java.io.*;
+import java.util.zip.GZIPOutputStream;
+import java.nio.charset.StandardCharsets;
 
-public class FileDownloader {
+public class GzipCompression {
 
-    // Method to accept the Map representing file status and download status
-    public static void monitorDownloadStatus(Map<FileStatus, Boolean> downloadStatusMap) {
-        int totalFiles = downloadStatusMap.size();
+    public static InputStream compressListToInputStream(List<String> inputList) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        while (downloadStatusMap.values().stream().filter(Boolean::booleanValue).count() < totalFiles) {
-            double progressPercentage = (downloadStatusMap.values().stream().filter(Boolean::booleanValue).count() * 100.0) / totalFiles;
-            System.out.println("Download Progress: " + progressPercentage + "%");
-
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
+            for (String item : inputList) {
+                gzipOutputStream.write(item.getBytes(StandardCharsets.UTF_8));
+                gzipOutputStream.write('\n'); // Add newline after each string for separation
             }
         }
 
-        System.out.println("All files downloaded!");
+        return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
     }
 
+    // Example usage
     public static void main(String[] args) {
-        // Assume you have a downloadStatusMap with FileStatus and their download status
-        Map<FileStatus, Boolean> downloadStatusMap = new HashMap<>();
+        List<String> inputList = Arrays.asList("String 1", "String 2", "String 3");
 
-        // Populate the downloadStatusMap here with FileStatus objects and their download status
-        // For example:
-        // downloadStatusMap.put(fileStatus1, true);
-        // downloadStatusMap.put(fileStatus2, false);
-        // downloadStatusMap.put(fileStatus3, true);
-        // Add more FileStatus and their status as needed
-
-        // Create a new thread to run the monitoring code
-        Thread monitoringThread = new Thread(() -> monitorDownloadStatus(downloadStatusMap));
-        monitoringThread.start();
-
-        // Perform other tasks here...
-
-        // Wait for the monitoring thread to finish (optional)
         try {
-            monitoringThread.join();
-        } catch (InterruptedException e) {
+            InputStream compressedInputStream = compressListToInputStream(inputList);
+            // Use the compressedInputStream as needed
+            // For example, you can write it to a file or send it over a network.
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 }
+
