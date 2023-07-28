@@ -1,25 +1,58 @@
-import org.apache.parquet.example.data.Group;
-import org.apache.parquet.example.data.simple.SimpleGroupFactory;
-import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.example.GroupWriteSupport;
+
+import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.VarBinaryVector;
+import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.ipc.ArrowFileWriter;
+import org.apache.arrow.vector.ipc.WriteChannel;
+import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ParquetConverter {
 
-    public static InputStream convertListToParquetInputStream(List<String> dataList, String schema) throws IOException {
-        SimpleGroupFactory groupFactory = new SimpleGroupFactory(GroupWriteSupport.getSchemaFromString(schema));
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    public static InputStream convertListToParquetInputStream(List<String> dataList, String fieldName) throws IOException {
+        // Prepare Arrow schema
+        Field field = new Field(fieldName, new ArrowType.Binary(), null);
+        Schema schema = new Schema(List.of(field));
 
-        try (ParquetWriter<Group> writer = new ParquetWriter<>(new ParquetWriter.Builder<>(new org.apache.hadoop.fs.Path("dummy"), groupFactory), new GroupWriteSupport())) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (RootAllocator allocator = new RootAllocator();
+             VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator);
+             VarBinaryVector vector = (VarBinaryVector) root.getVector(0);
+             ArrowFileWriter writer = new ArrowFileWriter(root, null, Channels.newChannel(outputStream))) {
+
+            // Set up the Arrow vectors and writer
+            vector.allocateNew();
+            WritableByteChannel out = Channels.newChannel(writer);
+            List<ArrowRecordBatch> batches = new ArrayList<>();
+
+            // Write data to Arrow vectors and batches
             for (String data : dataList) {
-                Group group = groupFactory.newGroup();
-                group.append("data", data);
-                writer.write(group);
+                vector.setSafe(0, data.getBytes());
+                vector.setValueCount(1);
+                writer.writeBatch();
+                ArrowRecordBatch batch = root.getRecordBatch();
+                batches.add(batch);
+            }
+
+            // Write batches to output stream
+            writer.start();
+            writer.writeBatch();
+            writer.end();
+
+            // Cleanup
+            for (ArrowRecordBatch batch : batches) {
+                batch.close();
             }
         }
 
@@ -29,10 +62,10 @@ public class ParquetConverter {
     // Example usage
     public static void main(String[] args) {
         List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
-        String parquetSchema = "message data { required binary data; }";
+        String fieldName = "data";
 
         try {
-            InputStream parquetInputStream = convertListToParquetInputStream(dataList, parquetSchema);
+            InputStream parquetInputStream = convertListToParquetInputStream(dataList, fieldName);
             // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
