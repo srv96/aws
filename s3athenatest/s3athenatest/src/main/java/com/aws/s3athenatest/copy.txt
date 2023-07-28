@@ -1,44 +1,55 @@
 
+
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumWriter;
+import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.io.JsonEncoder;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.*;
 import java.util.List;
 
-public class AvroConverter {
+public class ParquetConverter {
 
-    public static InputStream convertListToAvroInputStream(List<byte[]> dataList, String avroSchema) throws IOException {
-        Schema schema = new Schema.Parser().parse(avroSchema);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    public static InputStream convertListToParquetInputStream(List<String> dataList) throws IOException {
+        // Define the Avro schema for the Parquet records
+        Schema schema = new Schema.Parser().parse("{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}");
 
-        DatumWriter<GenericData.Record> datumWriter = new GenericDatumWriter<>(schema);
-        JsonEncoder encoder = EncoderFactory.get().jsonEncoder(schema, outputStream);
+        // Create a temporary file to store the Parquet data
+        File tempFile = File.createTempFile("temp", ".parquet");
+        tempFile.deleteOnExit();
 
-        try (DataFileWriter<GenericData.Record> dataFileWriter = new DataFileWriter<>(datumWriter)) {
-            dataFileWriter.create(schema, outputStream);
-            for (byte[] data : dataList) {
-                GenericData.Record record = new GenericData.Record(schema);
-                record.put("data", data); // Assuming the Avro schema has a field "data" of type bytes
-                dataFileWriter.append(record);
+        // Convert List<String> to Avro records
+        DatumWriter<GenericRecord> datumWriter = new GenericData.Record(schema);
+        try (ParquetWriter<GenericRecord> parquetWriter = AvroParquetWriter.<GenericRecord>builder(tempFile)
+                .withSchema(schema)
+                .withCompressionCodec(CompressionCodecName.SNAPPY) // You can change the compression codec if needed
+                .build()) {
+            for (String data : dataList) {
+                GenericRecord record = new GenericData.Record(schema);
+                record.put("data", data);
+                parquetWriter.write(record);
             }
         }
 
-        return new ByteArrayInputStream(outputStream.toByteArray());
+        // Convert the Parquet file to InputStream
+        InputStream inputStream = new FileInputStream(tempFile);
+
+        return inputStream;
     }
 
     // Example usage
     public static void main(String[] args) {
-        List<byte[]> dataList = Arrays.asList("Hello".getBytes(), "World".getBytes());
-        String avroSchema = "{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"bytes\"}]}";
+        List<String> dataList = Arrays.asList("Hello", "World");
 
         try {
-            InputStream avroInputStream = convertListToAvroInputStream(dataList, avroSchema);
-            // Use the avroInputStream as needed
+            InputStream parquetInputStream = convertListToParquetInputStream(dataList);
+            // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
             e.printStackTrace();
