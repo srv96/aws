@@ -1,71 +1,61 @@
 
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.VarBinaryVector;
-import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
-import org.apache.arrow.vector.ipc.WriteChannel;
-import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
-import org.apache.arrow.vector.types.pojo.ArrowType;
-import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.types.pojo.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ParquetConverter {
 
-    public static InputStream convertListToParquetInputStream(List<String> dataList, String fieldName) throws IOException {
-        // Prepare Arrow schema
-        Field field = new Field(fieldName, new ArrowType.Binary(), null);
-        Schema schema = new Schema(List.of(field));
+    public static InputStream convertListToParquetInputStream(List<String> dataList, Schema schema) throws IOException {
+        try (BufferAllocator allocator = new RootAllocator()) {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            try (VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator);
+                 ArrowFileWriter writer = new ArrowFileWriter(root, null, Channels.newChannel(outputStream))) {
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (RootAllocator allocator = new RootAllocator();
-             VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator);
-             VarBinaryVector vector = (VarBinaryVector) root.getVector(0);
-             ArrowFileWriter writer = new ArrowFileWriter(root, null, Channels.newChannel(outputStream))) {
+                List<FieldVector> vectors = root.getFieldVectors();
+                for (FieldVector vector : vectors) {
+                    vector.allocateNew();
+                }
 
-            // Set up the Arrow vectors and writer
-            vector.allocateNew();
-            WritableByteChannel out = Channels.newChannel(writer);
-            List<ArrowRecordBatch> batches = new ArrayList<>();
+                for (String data : dataList) {
+                    for (int i = 0; i < vectors.size(); i++) {
+                        String value = (String) data; // Assuming that the dataList contains strings
+                        FieldVector vector = vectors.get(i);
+                        if (vector instanceof VarCharVector) {
+                            VarCharVector charVector = (VarCharVector) vector;
+                            byte[] bytes = value.getBytes();
+                            charVector.setSafe(0, bytes);
+                            charVector.setValueCount(1);
+                        } else {
+                            // Handle other types as per your schema requirements
+                        }
+                    }
+                    root.setRowCount(1);
+                    writer.writeBatch();
+                }
 
-            // Write data to Arrow vectors and batches
-            for (String data : dataList) {
-                vector.setSafe(0, data.getBytes());
-                vector.setValueCount(1);
-                writer.writeBatch();
-                ArrowRecordBatch batch = root.getRecordBatch();
-                batches.add(batch);
+                writer.end();
             }
 
-            // Write batches to output stream
-            writer.start();
-            writer.writeBatch();
-            writer.end();
-
-            // Cleanup
-            for (ArrowRecordBatch batch : batches) {
-                batch.close();
-            }
+            return new ByteArrayInputStream(outputStream.toByteArray());
         }
-
-        return new ByteArrayInputStream(outputStream.toByteArray());
     }
 
     // Example usage
     public static void main(String[] args) {
         List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
-        String fieldName = "data";
+        Field field = new Field("data", FieldType.nullable(new ArrowType.Utf8()), null);
+        Schema schema = new Schema(List.of(field));
 
         try {
-            InputStream parquetInputStream = convertListToParquetInputStream(dataList, fieldName);
+            InputStream parquetInputStream = convertListToParquetInputStream(dataList, schema);
             // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
