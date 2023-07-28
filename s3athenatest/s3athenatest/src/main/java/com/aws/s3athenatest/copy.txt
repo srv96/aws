@@ -1,54 +1,51 @@
 
-
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.Encoder;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.io.JsonEncoder;
-import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.example.data.Group;
+import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.hadoop.example.GroupWriteSupport;
 
 import java.io.*;
 import java.util.List;
 
 public class ParquetConverter {
 
-    public static InputStream convertListToParquetInputStream(List<String> dataList) throws IOException {
-        // Define the Avro schema for the Parquet records
-        Schema schema = new Schema.Parser().parse("{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}");
+    public InputStream convertListToParquetInputStream(List<String> stringList, String schema) throws IOException {
+        Configuration conf = new Configuration();
+        GroupWriteSupport.setSchema(new org.apache.avro.Schema.Parser().parse(schema), conf);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        // Create a temporary file to store the Parquet data
-        File tempFile = File.createTempFile("temp", ".parquet");
-        tempFile.deleteOnExit();
+        try (ParquetWriter<Group> writer = new ParquetWriter<>(
+                new Path("temp.parquet"), // Temporarily write to a file (you can change the path as needed)
+                new GroupWriteSupport(),
+                CompressionCodecName.GZIP,
+                128 * 1024,
+                1 * 1024 * 1024,
+                512,
+                true,
+                false,
+                ParquetProperties.WriterVersion.PARQUET_1_0,
+                conf)) {
 
-        // Convert List<String> to Avro records
-        DatumWriter<GenericRecord> datumWriter = new GenericData.Record(schema);
-        try (ParquetWriter<GenericRecord> parquetWriter = AvroParquetWriter.<GenericRecord>builder(tempFile)
-                .withSchema(schema)
-                .withCompressionCodec(CompressionCodecName.SNAPPY) // You can change the compression codec if needed
-                .build()) {
-            for (String data : dataList) {
-                GenericRecord record = new GenericData.Record(schema);
-                record.put("data", data);
-                parquetWriter.write(record);
+            SimpleGroupFactory groupFactory = new SimpleGroupFactory(GroupWriteSupport.getSchema(conf));
+
+            for (String str : stringList) {
+                Group group = groupFactory.newGroup();
+                group.append("data", str);
+                writer.write(group);
             }
         }
 
-        // Convert the Parquet file to InputStream
-        InputStream inputStream = new FileInputStream(tempFile);
-
-        return inputStream;
+        return new ByteArrayInputStream(outputStream.toByteArray());
     }
 
     // Example usage
     public static void main(String[] args) {
-        List<String> dataList = Arrays.asList("Hello", "World");
+        List<String> stringList = Arrays.asList("Hello", "World");
+        String schema = "message example { required binary data; }";
 
         try {
-            InputStream parquetInputStream = convertListToParquetInputStream(dataList);
+            ParquetConverter converter = new ParquetConverter();
+            InputStream parquetInputStream = converter.convertListToParquetInputStream(stringList, schema);
             // Use the parquetInputStream as needed
             // For example, you can write it to a file or send it over a network.
         } catch (IOException e) {
