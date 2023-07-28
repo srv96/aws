@@ -1,31 +1,39 @@
 
-
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.io.DatumWriter;
-import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.parquet.avro.AvroSchemaConverter;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.api.WriteSupport;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.MessageTypeParser;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ParquetConverter {
 
-    public static InputStream convertListToParquetInputStream(List<String> dataList, Schema schema) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    public static InputStream convertListToParquetInputStream(List<String> dataList, String avroSchema) throws IOException {
+        Schema schema = new Schema.Parser().parse(avroSchema);
+        MessageType parquetSchema = new AvroSchemaConverter().convert(schema);
 
-        try (DataFileWriter<GenericData.Record> avroWriter = new DataFileWriter<>(new GenericDatumWriter<>(schema))) {
-            avroWriter.create(schema, outputStream);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ParquetWriter<GenericRecord> writer = AvroParquetWriter.builder(new org.apache.hadoop.fs.Path("dummy"))
+                .withSchema(schema)
+                .withDataModel(GenericData.get())
+                .withCompressionCodec(CompressionCodecName.SNAPPY)
+                .build()) {
+
             for (String data : dataList) {
-                GenericData.Record record = new GenericData.Record(schema);
+                GenericRecord record = new GenericData.Record(schema);
                 record.put("data", data);
-                avroWriter.append(record);
+                writer.write(record);
             }
         }
 
@@ -35,8 +43,7 @@ public class ParquetConverter {
     // Example usage
     public static void main(String[] args) {
         List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
-        String avroSchemaJson = "{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}";
-        Schema avroSchema = new Schema.Parser().parse(avroSchemaJson);
+        String avroSchema = "{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}";
 
         try {
             InputStream parquetInputStream = convertListToParquetInputStream(dataList, avroSchema);
