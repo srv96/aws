@@ -1,40 +1,13 @@
-import java.util.concurrent.TimeUnit;
-
-public class TimeLogger {
-
-    public static String logExecutionTime() {
-        long startTime = System.nanoTime(); // Record start time
-
-        // Your code or method calls here
-
-        long endTime = System.nanoTime(); // Record end time
-
-        // Calculate elapsed time in nanoseconds
-        long elapsedTime = endTime - startTime;
-
-        // Convert nanoseconds to seconds
-        double totalSeconds = (double) elapsedTime / TimeUnit.SECONDS.toNanos(1);
-
-        // Format the time according to the requirement
-        String formattedTime;
-        if (totalSeconds < 60) {
-            // Less than a minute, return in seconds
-            formattedTime = String.format("%.2f seconds", totalSeconds);
-        } else if (totalSeconds < 3600) {
-            // Less than an hour, return in decimal minutes
-            double totalMinutes = totalSeconds / 60;
-            formattedTime = String.format("%.2f minutes", totalMinutes);
-        } else {
-            // More than an hour, return in decimal hours
-            double totalHours = totalSeconds / 3600;
-            formattedTime = String.format("%.2f hours", totalHours);
+public static String getFileExtension(File file) {
+        if (file == null || !file.isFile()) {
+            return null; // Invalid file or not a regular file
         }
 
-        return formattedTime;
-    }
+        String fileName = file.getName();
+        int dotIndex = fileName.lastIndexOf(".");
+        if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1).toLowerCase();
+        }
 
-    public static void main(String[] args) {
-        String logOutput = logExecutionTime();
-        System.out.println("Execution time: " + logOutput);
+        return null; // File has no extension
     }
-}
