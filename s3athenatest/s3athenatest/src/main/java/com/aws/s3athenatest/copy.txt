@@ -1,56 +1,40 @@
+import java.util.concurrent.TimeUnit;
 
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.parquet.avro.AvroSchemaConverter;
-import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.api.WriteSupport;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.MessageTypeParser;
+public class TimeLogger {
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+    public static String logExecutionTime() {
+        long startTime = System.nanoTime(); // Record start time
 
-public class ParquetConverter {
+        // Your code or method calls here
 
-    public static InputStream convertListToParquetInputStream(List<String> dataList, String avroSchema) throws IOException {
-        Schema schema = new Schema.Parser().parse(avroSchema);
-        MessageType parquetSchema = new AvroSchemaConverter().convert(schema);
+        long endTime = System.nanoTime(); // Record end time
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (ParquetWriter<GenericRecord> writer = AvroParquetWriter.builder(new org.apache.hadoop.fs.Path("dummy"))
-                .withSchema(schema)
-                .withDataModel(GenericData.get())
-                .withCompressionCodec(CompressionCodecName.SNAPPY)
-                .build()) {
+        // Calculate elapsed time in nanoseconds
+        long elapsedTime = endTime - startTime;
 
-            for (String data : dataList) {
-                GenericRecord record = new GenericData.Record(schema);
-                record.put("data", data);
-                writer.write(record);
-            }
+        // Convert nanoseconds to seconds
+        double totalSeconds = (double) elapsedTime / TimeUnit.SECONDS.toNanos(1);
+
+        // Format the time according to the requirement
+        String formattedTime;
+        if (totalSeconds < 60) {
+            // Less than a minute, return in seconds
+            formattedTime = String.format("%.2f seconds", totalSeconds);
+        } else if (totalSeconds < 3600) {
+            // Less than an hour, return in decimal minutes
+            double totalMinutes = totalSeconds / 60;
+            formattedTime = String.format("%.2f minutes", totalMinutes);
+        } else {
+            // More than an hour, return in decimal hours
+            double totalHours = totalSeconds / 3600;
+            formattedTime = String.format("%.2f hours", totalHours);
         }
 
-        return new ByteArrayInputStream(outputStream.toByteArray());
+        return formattedTime;
     }
 
-    // Example usage
     public static void main(String[] args) {
-        List<String> dataList = Arrays.asList("String 1", "String 2", "String 3");
-        String avroSchema = "{\"type\":\"record\",\"name\":\"DataRecord\",\"fields\":[{\"name\":\"data\",\"type\":\"string\"}]}";
-
-        try {
-            InputStream parquetInputStream = convertListToParquetInputStream(dataList, avroSchema);
-            // Use the parquetInputStream as needed
-            // For example, you can write it to a file or send it over a network.
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String logOutput = logExecutionTime();
+        System.out.println("Execution time: " + logOutput);
     }
 }
