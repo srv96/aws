@@ -1,13 +1,2 @@
-public static String getFileExtension(File file) {
-        if (file == null || !file.isFile()) {
-            return null; // Invalid file or not a regular file
-        }
 
-        String fileName = file.getName();
-        int dotIndex = fileName.lastIndexOf(".");
-        if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
-            return fileName.substring(dotIndex + 1).toLowerCase();
-        }
-
-        return null; // File has no extension
-    }
+aws s3api list-objects --bucket your-bucket-name --prefix path/to/folder/ --output json --query "sum(Contents[].Size)"
