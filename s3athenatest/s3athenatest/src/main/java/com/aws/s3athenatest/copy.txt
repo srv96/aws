@@ -1,2 +1,5 @@
 
 hdfs dfs -find /path/to/your/directory -type d -maxdepth 3 -exec hdfs dfs -du -h {} \; > directory_sizes.txt
+
+
+hadoop fs -ls -R /path/to/your/directory | grep -v '^d' | awk '{print $5}' | awk '{ total += $1 } END { print NR, total }'
