@@ -1,2 +1,2 @@
 
-hdfs dfs -ls -R /path/to/your/directory | grep '^d' | awk '{print $8}' > result.txt
+hdfs dfs -find /path/to/your/directory -type d -maxdepth 3 -exec hdfs dfs -du -h {} \; > directory_sizes.txt
