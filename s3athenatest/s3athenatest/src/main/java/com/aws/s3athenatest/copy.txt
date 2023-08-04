@@ -3,3 +3,6 @@ hdfs dfs -find /path/to/your/directory -type d -maxdepth 3 -exec hdfs dfs -du -h
 
 
 hadoop fs -ls -R /path/to/your/directory | grep -v '^d' | awk '{print $5}' | awk '{ total += $1 } END { print NR, total }'
+
+
+hdfs dfs -ls -R /your/directory/path | awk '{print $8, $5}' | grep -v '^d' | awk '{total += $2; count++} END {print "Number of Files: " count ", Total Size: " total " bytes"}'
