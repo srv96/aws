@@ -13,35 +13,37 @@ hdfs dfs -ls -R /your/directory/path | awk '{print $8, $5}' | grep -v '^d' | awk
 
 #!/bin/bash
 
-# Check if the correct number of arguments is provided
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <file_path>"
-    exit 1
+# Check if the user provided the input path
+if [ $# -eq 0 ]; then
+  echo "Please provide a Hadoop file path."
+  exit 1
 fi
 
-# Function to calculate the number of files and directory size
-function calculate_directory_stats {
-    local dir="$1"
-    local num_files=$(find "$dir" -type f | wc -l)
-    local dir_size=$(du -sh "$dir" | cut -f1)
-    echo "Directory: $dir | Number of Files: $num_files | Size: $dir_size" >> result.txt
+input_path=$1
+result_file="result.txt"
+
+# Function to process each directory and write results to result.txt
+function process_directory() {
+  local directory_path=$1
+
+  # Get the number of files and total size of the directory
+  local file_count=$(hdfs dfs -ls "$directory_path" | grep '^-' | wc -l)
+  local dir_size=$(hdfs dfs -du -s -h "$directory_path" | awk '{print $1}')
+
+  # Write results to result.txt
+  echo "Directory: $directory_path, Number of Files: $file_count, Size: $dir_size" >> "$result_file"
+
+  # Recursively process subdirectories
+  local subdirs=$(hdfs dfs -ls "$directory_path" | grep '^d' | awk '{print $NF}')
+  for subdir in $subdirs; do
+    process_directory "$subdir"
+  done
 }
 
-# Main script
-file_path="$1"
+# Clear the result file before starting
+> "$result_file"
 
-# Check if the provided path exists
-if [ ! -e "$file_path" ]; then
-    echo "Error: The file path '$file_path' does not exist."
-    exit 1
-fi
+# Call the function with the input path
+process_directory "$input_path"
 
-# Create or clear the result.txt file
-> result.txt
-
-# Find all subdirectories recursively and calculate stats
-while IFS= read -r -d '' directory; do
-    calculate_directory_stats "$directory"
-done < <(find "$file_path" -type d -print0)
-
-echo "Results are stored in result.txt file."
+echo "Results have been stored in $result_file"
