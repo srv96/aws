@@ -1,2 +1,2 @@
 
-hadoop fs -find /path/to/your/directory -type d -exec hadoop fs -du -h {} \; > directory_sizes.txt
+hdfs dfs -ls -R /path/to/your/directory | grep '^d' | awk '{print $8}' > result.txt
