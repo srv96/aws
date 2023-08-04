@@ -1,2 +1,2 @@
 
-aws s3api list-objects --bucket your-bucket-name --prefix path/to/folder/ --output json --query "sum(Contents[].Size)"
+hadoop fs -find /path/to/your/directory -type d -exec hadoop fs -du -h {} \; > directory_sizes.txt
