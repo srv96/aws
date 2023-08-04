@@ -9,3 +9,39 @@ hdfs dfs -ls -R /your/directory/path | awk '{print $8, $5}' | grep -v '^d' | awk
 
 
 hdfs dfs -ls -R /your/directory/path | awk '{print $8, $5}' | grep -v '^d' | awk '{total += $2; count++; print $1} END {print "Number of Files: " count ", Total Size: " total " bytes"}'
+
+
+#!/bin/bash
+
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <file_path>"
+    exit 1
+fi
+
+# Function to calculate the number of files and directory size
+function calculate_directory_stats {
+    local dir="$1"
+    local num_files=$(find "$dir" -type f | wc -l)
+    local dir_size=$(du -sh "$dir" | cut -f1)
+    echo "Directory: $dir | Number of Files: $num_files | Size: $dir_size" >> result.txt
+}
+
+# Main script
+file_path="$1"
+
+# Check if the provided path exists
+if [ ! -e "$file_path" ]; then
+    echo "Error: The file path '$file_path' does not exist."
+    exit 1
+fi
+
+# Create or clear the result.txt file
+> result.txt
+
+# Find all subdirectories recursively and calculate stats
+while IFS= read -r -d '' directory; do
+    calculate_directory_stats "$directory"
+done < <(find "$file_path" -type d -print0)
+
+echo "Results are stored in result.txt file."
