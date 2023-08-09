@@ -8,3 +8,51 @@ public static ByteArrayInputStream getFileAsByteArrayInputStream(String filePath
         byte[] fileData = Files.readAllBytes(path);
         return new ByteArrayInputStream(fileData);
     }
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+public class ByteArrayToHDFSUploader {
+
+    public static void uploadByteArrayToHDFS(byte[] byteArray, String hdfsFilePath) throws IOException {
+        Configuration conf = new Configuration();
+        conf.set("fs.defaultFS", "hdfs://namenode-host:port"); // Replace with your HDFS URI
+
+        try (FileSystem fs = FileSystem.get(conf)) {
+            InputStream inputStream = new ByteArrayInputStream(byteArray);
+
+            Path hdfsPath = new Path(hdfsFilePath);
+            if (hdfsPath.isAbsoluteAndSchemeAuthorityNull()) {
+                hdfsPath = new Path(fs.getUri().toString(), hdfsPath);
+            }
+
+            try (org.apache.hadoop.fs.FSDataOutputStream outputStream = fs.create(hdfsPath)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
+
+            System.out.println("Byte array uploaded to HDFS successfully!");
+        }
+    }
+
+    public static void main(String[] args) {
+        String hdfsFilePath = "/user/yourusername/byteArrayFile.bin"; // Replace with the desired HDFS file path
+
+        byte[] byteArray = "This is a byte array.".getBytes(); // Replace with your actual byte array
+
+        try {
+            uploadByteArrayToHDFS(byteArray, hdfsFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
