@@ -1,36 +1,38 @@
 
+
 import java.util.List;
 import java.util.ArrayList;
 
-public class VerticalSumCalculator {
+public class DataProcessing {
 
-    public static List<Integer> calculateVerticalSum(List<List<String>> inputData) {
-        List<Integer> verticalSums = new ArrayList<>();
+    public static List<String> processRows(List<List<String>> inputData) {
+        List<String> result = new ArrayList<>();
 
-        if (!inputData.isEmpty()) {
-            int numColumns = inputData.get(0).size();
-
-            // Initialize the verticalSums list with zeros
-            for (int i = 0; i < numColumns; i++) {
-                verticalSums.add(0);
-            }
-
-            for (List<String> row : inputData) {
-                if (row.size() >= numColumns) {
-                    for (int i = 0; i < numColumns; i++) {
-                        try {
-                            int value = Integer.parseInt(row.get(i));
-                            verticalSums.set(i, verticalSums.get(i) + value);
-                        } catch (NumberFormatException e) {
-                            // Handle invalid number format if needed
-                            e.printStackTrace();
-                        }
+        for (List<String> row : inputData) {
+            if (row.size() >= 3) {
+                try {
+                    int num1 = Integer.parseInt(row.get(0));
+                    int num2 = Integer.parseInt(row.get(1));
+                    int num3 = Integer.parseInt(row.get(2));
+                    
+                    int sum = num1 + num2 + num3;
+                    String lastColumn = row.get(row.size() - 1);
+                    int lastIndex = lastColumn.lastIndexOf('/');
+                    
+                    if (lastIndex != -1) {
+                        String trimmedValue = lastColumn.substring(lastIndex + 1).trim();
+                        result.add(sum + " " + trimmedValue);
+                    } else {
+                        result.add(sum + " " + lastColumn.trim());
                     }
+                } catch (NumberFormatException e) {
+                    // Handle invalid number format if needed
+                    e.printStackTrace();
                 }
             }
         }
-
-        return verticalSums;
+        
+        return result;
     }
 
     public static void main(String[] args) {
@@ -39,20 +41,19 @@ public class VerticalSumCalculator {
         row1.add("10");
         row1.add("20");
         row1.add("30");
-        row1.add("40");
+        row1.add("Hello / World");
         inputData.add(row1);
 
         List<String> row2 = new ArrayList<>();
         row2.add("5");
         row2.add("15");
         row2.add("25");
-        row2.add("35");
+        row2.add("Another / Example");
         inputData.add(row2);
 
-        List<Integer> verticalSums = calculateVerticalSum(inputData);
-        System.out.println("Vertical Sums per Column:");
-        for (Integer sum : verticalSums) {
-            System.out.println(sum);
+        List<String> processedData = processRows(inputData);
+        for (String row : processedData) {
+            System.out.println(row);
         }
     }
 }
