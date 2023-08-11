@@ -1,36 +1,44 @@
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CsvExporter {
-    public static void exportToCsv(List<List<String>> data, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            for (List<String> row : data) {
-                StringBuilder csvRow = new StringBuilder();
-                for (String cell : row) {
-                    csvRow.append(cell).append(",");
+public class FileFilter {
+    public static List<File> filterFilesByPattern(String directoryPath, String pattern) {
+        List<File> filteredFiles = new ArrayList<>();
+        
+        File directory = new File(directoryPath);
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("Input path must be a directory.");
+        }
+        
+        Pattern regexPattern = Pattern.compile(pattern);
+        
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    Matcher matcher = regexPattern.matcher(file.getName());
+                    if (matcher.find()) {
+                        filteredFiles.add(file);
+                    }
                 }
-                csvRow.deleteCharAt(csvRow.length() - 1); // Remove trailing comma
-                csvRow.append("\n");
-                writer.write(csvRow.toString());
             }
         }
+        
+        return filteredFiles;
     }
 
     public static void main(String[] args) {
-        List<List<String>> data = new ArrayList<>();
-        data.add(List.of("John", "Doe", "30"));
-        data.add(List.of("Jane", "Smith", "25"));
-        data.add(List.of("Alice", "Johnson", "28"));
+        String directoryPath = "path/to/your/directory";
+        String pattern = "part-\\d{5}-[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}";
+        
+        List<File> filteredFiles = filterFilesByPattern(directoryPath, pattern);
 
-        String filePath = "output.csv";
-
-        try {
-            exportToCsv(data, filePath);
-            System.out.println("Data exported to " + filePath);
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (File file : filteredFiles) {
+            System.out.println("Filtered File: " + file.getAbsolutePath());
         }
     }
 }
+
