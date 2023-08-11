@@ -1,29 +1,38 @@
-import java.util.List;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
-public class StringListManipulator {
-
-    public static void removeStrings(List<String> stringsToRemove, List<String> targetList) {
-        targetList.removeAll(stringsToRemove);
-    }
+public class FileToListExample {
 
     public static void main(String[] args) {
-        List<String> list1 = new ArrayList<>();
-        list1.add("apple");
-        list1.add("banana");
-        list1.add("cherry");
+        String filePath = "path_to_your_file.txt"; // Replace with your file path
 
-        List<String> list2 = new ArrayList<>();
-        list2.add("banana");
-        list2.add("grape");
-        list2.add("cherry");
+        List<List<String>> dataList = new ArrayList<>();
 
-        System.out.println("List 1 before removal: " + list1);
-        System.out.println("List 2 before removal: " + list2);
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] columns = line.split("\t");
+                String[] lastColumn = columns[3].split(" ");
 
-        removeStrings(list1, list2);
+                List<String> rowList = new ArrayList<>();
+                rowList.add(columns[0]);
+                rowList.add(columns[1]);
+                rowList.add(columns[2]);
+                rowList.add(lastColumn[0]); // Assuming only one element in the last column
 
-        System.out.println("List 1 after removal: " + list1);
-        System.out.println("List 2 after removal: " + list2);
+                dataList.add(rowList);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Print the List<List<String>>
+        for (List<String> row : dataList) {
+            System.out.println(row);
+        }
     }
 }
