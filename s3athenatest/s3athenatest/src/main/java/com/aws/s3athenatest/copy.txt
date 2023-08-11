@@ -1,58 +1,34 @@
-public static ByteArrayInputStream getFileAsByteArrayInputStream(String filePath) throws IOException {
-        Path path = Paths.get(filePath);
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
-        if (!Files.exists(path)) {
-            throw new IOException("File not found: " + filePath);
+public class EmptyFileFinder {
+    public static List<File> findEmptyFiles(String path) {
+        List<File> emptyFiles = new ArrayList<>();
+        
+        File directory = new File(path);
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("Input path must be a directory.");
         }
-
-        byte[] fileData = Files.readAllBytes(path);
-        return new ByteArrayInputStream(fileData);
-    }
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-public class ByteArrayToHDFSUploader {
-
-    public static void uploadByteArrayToHDFS(byte[] byteArray, String hdfsFilePath) throws IOException {
-        Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://namenode-host:port"); // Replace with your HDFS URI
-
-        try (FileSystem fs = FileSystem.get(conf)) {
-            InputStream inputStream = new ByteArrayInputStream(byteArray);
-
-            Path hdfsPath = new Path(hdfsFilePath);
-            if (hdfsPath.isAbsoluteAndSchemeAuthorityNull()) {
-                hdfsPath = new Path(fs.getUri().toString(), hdfsPath);
-            }
-
-            try (org.apache.hadoop.fs.FSDataOutputStream outputStream = fs.create(hdfsPath)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
+        
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile() && file.length() == 0) {
+                    emptyFiles.add(file);
                 }
             }
-
-            System.out.println("Byte array uploaded to HDFS successfully!");
         }
+        
+        return emptyFiles;
     }
-
+    
     public static void main(String[] args) {
-        String hdfsFilePath = "/user/yourusername/byteArrayFile.bin"; // Replace with the desired HDFS file path
-
-        byte[] byteArray = "This is a byte array.".getBytes(); // Replace with your actual byte array
-
-        try {
-            uploadByteArrayToHDFS(byteArray, hdfsFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
+        String directoryPath = "path/to/your/directory";
+        List<File> emptyFiles = findEmptyFiles(directoryPath);
+        
+        for (File file : emptyFiles) {
+            System.out.println("Empty File: " + file.getAbsolutePath());
         }
     }
 }
-
