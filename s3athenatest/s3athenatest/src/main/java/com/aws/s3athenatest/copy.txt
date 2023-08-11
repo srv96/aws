@@ -1,34 +1,33 @@
-import java.io.File;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmptyFileFinder {
-    public static List<File> findEmptyFiles(String path) {
-        List<File> emptyFiles = new ArrayList<>();
+public class FileNameProcessor {
+    public static List<String> processFileNames(List<String> fileNames) {
+        List<String> processedNames = new ArrayList<>();
         
-        File directory = new File(path);
-        if (!directory.isDirectory()) {
-            throw new IllegalArgumentException("Input path must be a directory.");
-        }
-        
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isFile() && file.length() == 0) {
-                    emptyFiles.add(file);
-                }
+        for (String fileName : fileNames) {
+            String[] parts = fileName.split("_", 4);
+            if (parts.length < 4) {
+                throw new IllegalArgumentException("Invalid file name format: " + fileName);
             }
+            
+            String firstPart = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + parts[3].replace(".txt", "");
+            processedNames.add(firstPart);
         }
         
-        return emptyFiles;
+        return processedNames;
     }
     
     public static void main(String[] args) {
-        String directoryPath = "path/to/your/directory";
-        List<File> emptyFiles = findEmptyFiles(directoryPath);
+        List<String> fileNames = new ArrayList<>();
+        fileNames.add("tenants_ptr_omrap_hive_db_ptt_omrap_markets_confirmed_reg_exculsion_expr.txt");
+        fileNames.add("tenants_ptr_omrap_hive_db_ptt_omrap_markets_semantic_derivative_profile_statement_contact.txt");
         
-        for (File file : emptyFiles) {
-            System.out.println("Empty File: " + file.getAbsolutePath());
+        List<String> processedNames = processFileNames(fileNames);
+        
+        for (String processedName : processedNames) {
+            System.out.println(processedName);
         }
     }
 }
