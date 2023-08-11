@@ -1,11 +1,15 @@
+
 import java.io.File;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class FileFilter {
-    public static List<File> filterFilesByPattern(String directoryPath, String pattern) {
+public class FileContentFilter {
+    public static List<File> filterFilesWithPattern(String directoryPath) {
         List<File> filteredFiles = new ArrayList<>();
         
         File directory = new File(directoryPath);
@@ -13,15 +17,21 @@ public class FileFilter {
             throw new IllegalArgumentException("Input path must be a directory.");
         }
         
-        Pattern regexPattern = Pattern.compile(pattern);
-        
         File[] files = directory.listFiles();
         if (files != null) {
+            Pattern pattern = Pattern.compile("part-\\d{5}-[A-Za-z0-9]{7}");
+            
             for (File file : files) {
                 if (file.isFile()) {
-                    Matcher matcher = regexPattern.matcher(file.getName());
-                    if (matcher.find()) {
-                        filteredFiles.add(file);
+                    try {
+                        String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                        Matcher matcher = pattern.matcher(content);
+                        
+                        if (matcher.find()) {
+                            filteredFiles.add(file);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -29,16 +39,13 @@ public class FileFilter {
         
         return filteredFiles;
     }
-
+    
     public static void main(String[] args) {
         String directoryPath = "path/to/your/directory";
-        String pattern = "part-\\d{5}-[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}";
+        List<File> filteredFiles = filterFilesWithPattern(directoryPath);
         
-        List<File> filteredFiles = filterFilesByPattern(directoryPath, pattern);
-
         for (File file : filteredFiles) {
             System.out.println("Filtered File: " + file.getAbsolutePath());
         }
     }
 }
-
