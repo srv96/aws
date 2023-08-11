@@ -1,38 +1,58 @@
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
-public class FileToListExample {
+public class VerticalSumCalculator {
 
-    public static void main(String[] args) {
-        String filePath = "path_to_your_file.txt"; // Replace with your file path
+    public static List<Integer> calculateVerticalSum(List<List<String>> inputData) {
+        List<Integer> verticalSums = new ArrayList<>();
 
-        List<List<String>> dataList = new ArrayList<>();
+        if (!inputData.isEmpty()) {
+            int numColumns = inputData.get(0).size();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] columns = line.split("\t");
-                String[] lastColumn = columns[3].split(" ");
-
-                List<String> rowList = new ArrayList<>();
-                rowList.add(columns[0]);
-                rowList.add(columns[1]);
-                rowList.add(columns[2]);
-                rowList.add(lastColumn[0]); // Assuming only one element in the last column
-
-                dataList.add(rowList);
+            // Initialize the verticalSums list with zeros
+            for (int i = 0; i < numColumns; i++) {
+                verticalSums.add(0);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            for (List<String> row : inputData) {
+                if (row.size() >= numColumns) {
+                    for (int i = 0; i < numColumns; i++) {
+                        try {
+                            int value = Integer.parseInt(row.get(i));
+                            verticalSums.set(i, verticalSums.get(i) + value);
+                        } catch (NumberFormatException e) {
+                            // Handle invalid number format if needed
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
         }
 
-        // Print the List<List<String>>
-        for (List<String> row : dataList) {
-            System.out.println(row);
+        return verticalSums;
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> inputData = new ArrayList<>();
+        List<String> row1 = new ArrayList<>();
+        row1.add("10");
+        row1.add("20");
+        row1.add("30");
+        row1.add("40");
+        inputData.add(row1);
+
+        List<String> row2 = new ArrayList<>();
+        row2.add("5");
+        row2.add("15");
+        row2.add("25");
+        row2.add("35");
+        inputData.add(row2);
+
+        List<Integer> verticalSums = calculateVerticalSum(inputData);
+        System.out.println("Vertical Sums per Column:");
+        for (Integer sum : verticalSums) {
+            System.out.println(sum);
         }
     }
 }
