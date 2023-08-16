@@ -1,38 +1,27 @@
+import java.util.*;
 
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class FileNameProcessor {
-    public static List<String> processFileNames(List<String> fileNames) {
-        List<String> processedNames = new ArrayList<>();
-        
-        for (String fileName : fileNames) {
-            String[] parts = fileName.split("_");
-            if (parts.length < 4) {
-                throw new IllegalArgumentException("Invalid file name format: " + fileName);
-            }
-            
-            String firstPart = parts[0] + "/" + parts[1] + "/" + parts[2] + "/" + parts[3];
-            String secondPart = parts[4] + "/" + parts[5];
-            String restOfFileName = parts[6].substring(0, parts[6].lastIndexOf('.'));
-            
-            String processedName = firstPart + "/" + secondPart + "/" + restOfFileName;
-            processedNames.add(processedName);
-        }
-        
-        return processedNames;
-    }
-    
+public class TableSorter {
     public static void main(String[] args) {
-        List<String> fileNames = new ArrayList<>();
-        fileNames.add("tenants_ptr_omrap_hive_db_ptt_omrap_markets_confirmed_reg_exculsion_expr.txt");
-        fileNames.add("tenants_ptr_omrap_hive_db_ptt_omrap_markets_semantic_derivative_profile_statement_contact.txt");
-        
-        List<String> processedNames = processFileNames(fileNames);
-        
-        for (String name : processedNames) {
-            System.out.println("Processed Name: " + name);
+        // Create a sample table (List<List<String>>)
+        List<List<String>> table = new ArrayList<>();
+        table.add(Arrays.asList("John", "Doe", "30", "50000"));
+        table.add(Arrays.asList("Jane", "Smith", "28", "60000"));
+        table.add(Arrays.asList("Alice", "Johnson", "35", "45000"));
+        table.add(Arrays.asList("Bob", "Brown", "32", "55000"));
+
+        // Sort the table based on the values in the fourth column (index 3)
+        Collections.sort(table, new Comparator<List<String>>() {
+            @Override
+            public int compare(List<String> row1, List<String> row2) {
+                String value1 = row1.get(3);
+                String value2 = row2.get(3);
+                return Integer.compare(Integer.parseInt(value1), Integer.parseInt(value2));
+            }
+        });
+
+        // Print the sorted table
+        for (List<String> row : table) {
+            System.out.println(row);
         }
     }
 }
