@@ -1,115 +1,43 @@
-public class ExcelConverter {
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.*;
+
+public class UniformFontStyling {
 
     public static void main(String[] args) {
         try {
-            // Convert XLSX to XLS
-            convertXlsxToXls("input.xlsx", "output.xls");
-            System.out.println("XLSX to XLS conversion completed successfully.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+            // Load the existing XLSX file
+            FileInputStream fileInputStream = new FileInputStream("input.xlsx");
+            XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream);
+            
+            // Create a font with the desired style
+            Font uniformFont = workbook.createFont();
+            uniformFont.setFontName("Arial"); // Font name (e.g., Arial)
+            uniformFont.setFontHeightInPoints((short) 12); // Font size
+            uniformFont.setBold(true); // Bold
+            uniformFont.setColor(IndexedColors.BLACK.getIndex()); // Font color (e.g., black)
 
-    public static void convertXlsxToXls(String xlsxFilePath, String xlsFilePath) throws IOException {
-        FileInputStream xlsxFile = new FileInputStream(new File(xlsxFilePath));
-        XSSFWorkbook xlsxWorkbook = new XSSFWorkbook(xlsxFile);
-
-        // Create a new HSSFWorkbook (XLS format)
-        HSSFWorkbook xlsWorkbook = new HSSFWorkbook();
-
-        for (int sheetIndex = 0; sheetIndex < xlsxWorkbook.getNumberOfSheets(); sheetIndex++) {
-            XSSFSheet xlsxSheet = xlsxWorkbook.getSheetAt(sheetIndex);
-            HSSFSheet xlsSheet = xlsWorkbook.createSheet(xlsxSheet.getSheetName());
-
-            for (int rowNum = 0; rowNum <= xlsxSheet.getLastRowNum(); rowNum++) {
-                XSSFRow xlsxRow = xlsxSheet.getRow(rowNum);
-                HSSFRow xlsRow = xlsSheet.createRow(rowNum);
-
-                if (xlsxRow != null) {
-                    for (int cellNum = 0; cellNum <= xlsxRow.getLastCellNum(); cellNum++) {
-                        XSSFCell xlsxCell = xlsxRow.getCell(cellNum);
-                        HSSFCell xlsCell = xlsRow.createCell(cellNum);
-
-                        if (xlsxCell != null) {
-                            // Copy cell value and style
-                            xlsCell.setCellValue(getCellValue(xlsxCell));
-                            copyCellStyle(xlsxCell.getCellStyle(), xlsCell.getCellStyle(), xlsWorkbook);
-                        }
+            // Apply the uniform font style to all cells in all sheets
+            for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
+                XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
+                for (Row row : sheet) {
+                    for (Cell cell : row) {
+                        CellStyle cellStyle = cell.getCellStyle();
+                        cellStyle.setFont(uniformFont);
+                        cell.setCellStyle(cellStyle);
                     }
                 }
             }
+
+            // Save the modified workbook to a new file
+            FileOutputStream fileOutputStream = new FileOutputStream("output.xlsx");
+            workbook.write(fileOutputStream);
+            fileOutputStream.close();
+            workbook.close();
+
+            System.out.println("Uniform font styling applied successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        // Save the XLS workbook to a file
-        FileOutputStream xlsFile = new FileOutputStream(xlsFilePath);
-        xlsWorkbook.write(xlsFile);
-
-        xlsxFile.close();
-        xlsFile.close();
-    }
-
-    private static String getCellValue(XSSFCell cell) {
-        if (cell == null) {
-            return "";
-        }
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getRichStringCellValue().getString();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    return Double.toString(cell.getNumericCellValue());
-                }
-            case BOOLEAN:
-                return Boolean.toString(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
-        }
-    }
-
-    private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle, HSSFWorkbook targetWorkbook) {
-        // Copy font
-        HSSFFont toFont = targetWorkbook.createFont();
-        XSSFFont fromFont = fromStyle.getFont();
-        toFont.setBold(fromFont.getBold());
-        toFont.setItalic(fromFont.getItalic());
-        toFont.setFontName(fromFont.getFontName());
-        toFont.setFontHeight(fromFont.getFontHeight());
-        
-        // Extract the color index from XSSFColor (if it's not null)
-        XSSFColor xssfColor = fromFont.getXSSFColor();
-        if (xssfColor != null) {
-            byte[] rgb = xssfColor.getRGB();
-            if (rgb != null && rgb.length == 3) {
-                HSSFColor hssfColor = getHSSFColorFromRGB(targetWorkbook, rgb[0], rgb[1], rgb[2]);
-                if (hssfColor != null) {
-                    short colorIndex = hssfColor.getIndex();
-                    toFont.setColor(colorIndex);
-                }
-            }
-        }
-
-        // Copy cell's style
-        toStyle.setAlignment(fromStyle.getAlignment());
-        toStyle.setVerticalAlignment(fromStyle.getVerticalAlignment());
-        toStyle.setDataFormat(fromStyle.getDataFormat());
-        toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
-        toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
-        toStyle.setFont(toFont);
-    }
-
-    private static HSSFColor getHSSFColorFromRGB(HSSFWorkbook workbook, byte red, byte green, byte blue) {
-        HSSFPalette palette = workbook.getCustomPalette();
-        HSSFColor hssfColor = palette.findColor(red, green, blue);
-
-        if (hssfColor == null) {
-            palette.setColorAtIndex(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex(), red, green, blue);
-            hssfColor = palette.getColor(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex());
-        }
-
-        return hssfColor;
     }
 }
