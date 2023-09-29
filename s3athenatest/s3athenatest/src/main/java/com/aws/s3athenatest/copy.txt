@@ -1,15 +1,15 @@
-<dependencies>
-    <!-- Apache POI - Core -->
-    <dependency>
-        <groupId>org.apache.poi</groupId>
-        <artifactId>poi</artifactId>
-        <version>5.0.0</version> <!-- Use the latest version available -->
-    </dependency>
+private static void createAndCopyRow(Sheet sheet, Row sourceRow, Row targetRow, short fillColor) {
+    if (sourceRow != null) {
+        for (int i = 0; i < sourceRow.getLastCellNum(); i++) {
+            Cell sourceCell = sourceRow.getCell(i);
+            Cell targetCell = targetRow.createCell(i);
 
-    <!-- Apache POI - OOXML (for .xlsx files) -->
-    <dependency>
-        <groupId>org.apache.poi</groupId>
-        <artifactId>poi-ooxml</artifactId>
-        <version>5.0.0</version> <!-- Use the latest version available -->
-    </dependency>
-</dependencies>
+            if (sourceCell != null) {
+                targetCell.setCellValue(sourceCell.toString());
+                targetCell.setCellStyle(sourceCell.getCellStyle());
+                targetCell.getCellStyle().setFillForegroundColor(fillColor);
+                targetCell.getCellStyle().setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            }
+        }
+    }
+}
