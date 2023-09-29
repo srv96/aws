@@ -1,6 +1,5 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
@@ -10,18 +9,20 @@ public class ExcelComparator {
 
     public static void main(String[] args) {
         try {
-            FileInputStream baseFile = new FileInputStream(new File("base.xlsx")); // Use .xlsx extension for XLSX files
-            FileInputStream targetFile = new FileInputStream(new File("target.xls")); // Use .xls extension for older XLS files
-            FileOutputStream diffFile = new FileOutputStream(new File("differences.xlsx")); // Use .xlsx extension for the output
+            FileInputStream baseFile = new FileInputStream(new File("base.xlsx"));
+            FileInputStream targetFile = new FileInputStream(new File("target.xlsx"));
+            FileOutputStream diffFile = new FileOutputStream(new File("differences.xlsx"));
 
-            Workbook baseWorkbook = new XSSFWorkbook(baseFile); // Use XSSFWorkbook for .xlsx files
-            Workbook targetWorkbook = new HSSFWorkbook(targetFile); // Use HSSFWorkbook for .xls files
+            Workbook baseWorkbook = new XSSFWorkbook(baseFile);
+            Workbook targetWorkbook = new XSSFWorkbook(targetFile);
             Workbook diffWorkbook = new XSSFWorkbook();
 
             compareAndCreateDiffSheet(baseWorkbook, targetWorkbook, diffWorkbook);
 
             baseFile.close();
             targetFile.close();
+
+            diffWorkbook.write(diffFile);
             diffFile.close();
 
             System.out.println("Differences detected and saved in differences.xlsx.");
@@ -30,5 +31,118 @@ public class ExcelComparator {
         }
     }
 
-    // ... Rest of the code (as provided earlier)
+    private static void compareAndCreateDiffSheet(Workbook baseWorkbook, Workbook targetWorkbook, Workbook diffWorkbook) {
+        for (int sheetIndex = 0; sheetIndex < baseWorkbook.getNumberOfSheets(); sheetIndex++) {
+            Sheet baseSheet = baseWorkbook.getSheetAt(sheetIndex);
+            Sheet targetSheet = targetWorkbook.getSheetAt(sheetIndex);
+            Sheet diffSheet = diffWorkbook.createSheet(baseSheet.getSheetName());
+
+            TreeMap<String, Row> baseRows = new TreeMap<>();
+            TreeMap<String, Row> targetRows = new TreeMap<>();
+
+            // Populate TreeMap with rows from base and target sheets
+            populateRowsMap(baseSheet, baseRows);
+            populateRowsMap(targetSheet, targetRows);
+
+            int rownum = 0;
+            for (Map.Entry<String, Row> baseEntry : baseRows.entrySet()) {
+                Row baseRow = baseEntry.getValue();
+                Row targetRow = targetRows.get(baseEntry.getKey());
+
+                if (targetRow == null) {
+                    // Row present in base but not in target - highlight as blue
+                    createAndCopyRow(diffSheet, baseRow, diffSheet.createRow(rownum++), IndexedColors.BLUE.getIndex(), diffWorkbook);
+                } else {
+                    // Compare the cells in the row
+                    boolean cellsDiffer = false;
+                    Row diffRow = diffSheet.createRow(rownum++);
+
+                    for (int cellIndex = 0; cellIndex < baseRow.getLastCellNum(); cellIndex++) {
+                        Cell baseCell = baseRow.getCell(cellIndex);
+                        Cell targetCell = targetRow.getCell(cellIndex);
+
+                        if (!cellValuesEqual(baseCell, targetCell)) {
+                            cellsDiffer = true;
+                            // Cell values differ - highlight as red
+                            copyCell(baseCell, createCell(diffRow, cellIndex, diffWorkbook), IndexedColors.RED.getIndex());
+                            copyCell(targetCell, createCell(diffRow, cellIndex + 1, diffWorkbook), IndexedColors.RED.getIndex());
+                        } else {
+                            copyCell(baseCell, createCell(diffRow, cellIndex, diffWorkbook), IndexedColors.WHITE.getIndex());
+                            copyCell(targetCell, createCell(diffRow, cellIndex + 1, diffWorkbook), IndexedColors.WHITE.getIndex());
+                        }
+                    }
+
+                    if (cellsDiffer) {
+                        // Row present in both but with different cells - highlight as red
+                        diffRow.getCell(0).getCellStyle().setFillForegroundColor(IndexedColors.RED.getIndex());
+                        diffRow.getCell(1).getCellStyle().setFillForegroundColor(IndexedColors.RED.getIndex());
+                    }
+                }
+            }
+        }
+    }
+
+    private static void populateRowsMap(Sheet sheet, TreeMap<String, Row> rowsMap) {
+        Iterator<Row> rowIterator = sheet.iterator();
+
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            StringBuilder rowKey = new StringBuilder();
+            for (int i = 0; i < row.getLastCellNum(); i++) {
+                Cell cell = row.getCell(i);
+                if (cell != null) {
+                    rowKey.append(cell.toString());
+                }
+            }
+            rowsMap.put(rowKey.toString(), row);
+        }
+    }
+
+    private static boolean cellValuesEqual(Cell cell1, Cell cell2) {
+        if (cell1 == null && cell2 == null) {
+            return true;
+        } else if (cell1 == null || cell2 == null) {
+            return false;
+        } else {
+            return cell1.toString().equals(cell2.toString());
+        }
+    }
+
+    private static Cell createCell(Row row, int columnIndex, Workbook workbook) {
+        Cell cell = row.createCell(columnIndex);
+        CellStyle cellStyle = workbook.createCellStyle();
+        cell.setCellStyle(cellStyle);
+        return cell;
+    }
+
+    private static void createAndCopyRow(Sheet sheet, Row sourceRow, Row targetRow, short fillColor, Workbook workbook) {
+        if (sourceRow != null) {
+            for (int i = 0; i < sourceRow.getLastCellNum(); i++) {
+                Cell sourceCell = sourceRow.getCell(i);
+                Cell targetCell = targetRow.createCell(i);
+
+                if (sourceCell != null) {
+                    targetCell.setCellValue(sourceCell.toString());
+                    CellStyle newCellStyle = workbook.createCellStyle();
+                    newCellStyle.cloneStyleFrom(sourceCell.getCellStyle());
+                    targetCell.setCellStyle(newCellStyle);
+                }
+            }
+
+            // Set the fill foreground color for the entire row
+            CellStyle targetRowStyle = workbook.createCellStyle();
+            targetRowStyle.setFillForegroundColor(fillColor);
+            targetRowStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            targetRow.setRowStyle(targetRowStyle);
+        }
+    }
+
+    private static void copyCell(Cell source, Cell target, short fillColor) {
+        if (source != null) {
+            target.setCellValue(source.toString());
+            target.setCellStyle(source.getCellStyle());
+            target.getCellStyle().setFillForegroundColor(fillColor);
+            target.getCellStyle().setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+    }
 }
