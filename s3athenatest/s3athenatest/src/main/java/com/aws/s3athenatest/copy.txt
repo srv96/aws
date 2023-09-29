@@ -1,11 +1,115 @@
-private static HSSFColor getHSSFColorFromRGB(HSSFWorkbook workbook, byte red, byte green, byte blue) {
-    HSSFPalette palette = workbook.getCustomPalette();
-    HSSFColor hssfColor = palette.findColor(red, green, blue);
+public class ExcelConverter {
 
-    if (hssfColor == null) {
-        palette.setColorAtIndex(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex(), red, green, blue);
-        hssfColor = palette.getColor(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex());
+    public static void main(String[] args) {
+        try {
+            // Convert XLSX to XLS
+            convertXlsxToXls("input.xlsx", "output.xls");
+            System.out.println("XLSX to XLS conversion completed successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    return hssfColor;
+    public static void convertXlsxToXls(String xlsxFilePath, String xlsFilePath) throws IOException {
+        FileInputStream xlsxFile = new FileInputStream(new File(xlsxFilePath));
+        XSSFWorkbook xlsxWorkbook = new XSSFWorkbook(xlsxFile);
+
+        // Create a new HSSFWorkbook (XLS format)
+        HSSFWorkbook xlsWorkbook = new HSSFWorkbook();
+
+        for (int sheetIndex = 0; sheetIndex < xlsxWorkbook.getNumberOfSheets(); sheetIndex++) {
+            XSSFSheet xlsxSheet = xlsxWorkbook.getSheetAt(sheetIndex);
+            HSSFSheet xlsSheet = xlsWorkbook.createSheet(xlsxSheet.getSheetName());
+
+            for (int rowNum = 0; rowNum <= xlsxSheet.getLastRowNum(); rowNum++) {
+                XSSFRow xlsxRow = xlsxSheet.getRow(rowNum);
+                HSSFRow xlsRow = xlsSheet.createRow(rowNum);
+
+                if (xlsxRow != null) {
+                    for (int cellNum = 0; cellNum <= xlsxRow.getLastCellNum(); cellNum++) {
+                        XSSFCell xlsxCell = xlsxRow.getCell(cellNum);
+                        HSSFCell xlsCell = xlsRow.createCell(cellNum);
+
+                        if (xlsxCell != null) {
+                            // Copy cell value and style
+                            xlsCell.setCellValue(getCellValue(xlsxCell));
+                            copyCellStyle(xlsxCell.getCellStyle(), xlsCell.getCellStyle(), xlsWorkbook);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Save the XLS workbook to a file
+        FileOutputStream xlsFile = new FileOutputStream(xlsFilePath);
+        xlsWorkbook.write(xlsFile);
+
+        xlsxFile.close();
+        xlsFile.close();
+    }
+
+    private static String getCellValue(XSSFCell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getRichStringCellValue().getString();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return Double.toString(cell.getNumericCellValue());
+                }
+            case BOOLEAN:
+                return Boolean.toString(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
+    }
+
+    private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle, HSSFWorkbook targetWorkbook) {
+        // Copy font
+        HSSFFont toFont = targetWorkbook.createFont();
+        XSSFFont fromFont = fromStyle.getFont();
+        toFont.setBold(fromFont.getBold());
+        toFont.setItalic(fromFont.getItalic());
+        toFont.setFontName(fromFont.getFontName());
+        toFont.setFontHeight(fromFont.getFontHeight());
+        
+        // Extract the color index from XSSFColor (if it's not null)
+        XSSFColor xssfColor = fromFont.getXSSFColor();
+        if (xssfColor != null) {
+            byte[] rgb = xssfColor.getRGB();
+            if (rgb != null && rgb.length == 3) {
+                HSSFColor hssfColor = getHSSFColorFromRGB(targetWorkbook, rgb[0], rgb[1], rgb[2]);
+                if (hssfColor != null) {
+                    short colorIndex = hssfColor.getIndex();
+                    toFont.setColor(colorIndex);
+                }
+            }
+        }
+
+        // Copy cell's style
+        toStyle.setAlignment(fromStyle.getAlignment());
+        toStyle.setVerticalAlignment(fromStyle.getVerticalAlignment());
+        toStyle.setDataFormat(fromStyle.getDataFormat());
+        toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
+        toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
+        toStyle.setFont(toFont);
+    }
+
+    private static HSSFColor getHSSFColorFromRGB(HSSFWorkbook workbook, byte red, byte green, byte blue) {
+        HSSFPalette palette = workbook.getCustomPalette();
+        HSSFColor hssfColor = palette.findColor(red, green, blue);
+
+        if (hssfColor == null) {
+            palette.setColorAtIndex(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex(), red, green, blue);
+            hssfColor = palette.getColor(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex());
+        }
+
+        return hssfColor;
+    }
 }
