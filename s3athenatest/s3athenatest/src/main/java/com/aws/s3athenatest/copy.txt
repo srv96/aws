@@ -1,5 +1,6 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
@@ -9,12 +10,12 @@ public class ExcelComparator {
 
     public static void main(String[] args) {
         try {
-            FileInputStream baseFile = new FileInputStream(new File("base.xlsx"));
-            FileInputStream targetFile = new FileInputStream(new File("target.xlsx"));
-            FileOutputStream diffFile = new FileOutputStream(new File("differences.xlsx"));
+            FileInputStream baseFile = new FileInputStream(new File("base.xlsx")); // Use .xlsx extension for XLSX files
+            FileInputStream targetFile = new FileInputStream(new File("target.xls")); // Use .xls extension for older XLS files
+            FileOutputStream diffFile = new FileOutputStream(new File("differences.xlsx")); // Use .xlsx extension for the output
 
-            Workbook baseWorkbook = new XSSFWorkbook(baseFile);
-            Workbook targetWorkbook = new XSSFWorkbook(targetFile);
+            Workbook baseWorkbook = new XSSFWorkbook(baseFile); // Use XSSFWorkbook for .xlsx files
+            Workbook targetWorkbook = new HSSFWorkbook(targetFile); // Use HSSFWorkbook for .xls files
             Workbook diffWorkbook = new XSSFWorkbook();
 
             compareAndCreateDiffSheet(baseWorkbook, targetWorkbook, diffWorkbook);
