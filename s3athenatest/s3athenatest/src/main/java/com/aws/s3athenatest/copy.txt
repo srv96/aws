@@ -1,6 +1,6 @@
-private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle, HSSFWorkbook targetWorkbook) {
+private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle) {
     // Copy font
-    HSSFFont toFont = targetWorkbook.createFont();
+    HSSFFont toFont = toStyle.getFont();
     XSSFFont fromFont = fromStyle.getFont();
     toFont.setBold(fromFont.getBold());
     toFont.setItalic(fromFont.getItalic());
@@ -12,7 +12,8 @@ private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle
     if (xssfColor != null) {
         byte[] rgb = xssfColor.getRGB();
         if (rgb != null && rgb.length == 3) {
-            HSSFColor hssfColor = targetWorkbook.getCustomPalette().findColor(rgb[0], rgb[1], rgb[2]);
+            // Adjust this part based on the actual HSSFColor retrieval
+            HSSFColor hssfColor = getHSSFColorFromRGB(toStyle, rgb[0], rgb[1], rgb[2]);
             if (hssfColor != null) {
                 short colorIndex = hssfColor.getIndex();
                 toFont.setColor(colorIndex);
@@ -26,5 +27,4 @@ private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle
     toStyle.setDataFormat(fromStyle.getDataFormat());
     toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
     toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
-    toStyle.setFont(toFont);
 }
