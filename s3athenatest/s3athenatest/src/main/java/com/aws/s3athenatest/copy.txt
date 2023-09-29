@@ -1,30 +1,11 @@
-private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle) {
-    // Copy font
-    HSSFFont toFont = toStyle.getFont();
-    XSSFFont fromFont = fromStyle.getFont();
-    toFont.setBold(fromFont.getBold());
-    toFont.setItalic(fromFont.getItalic());
-    toFont.setFontName(fromFont.getFontName());
-    toFont.setFontHeight(fromFont.getFontHeight());
-    
-    // Extract the color index from XSSFColor (if it's not null)
-    XSSFColor xssfColor = fromFont.getXSSFColor();
-    if (xssfColor != null) {
-        byte[] rgb = xssfColor.getRGB();
-        if (rgb != null && rgb.length == 3) {
-            // Adjust this part based on the actual HSSFColor retrieval
-            HSSFColor hssfColor = getHSSFColorFromRGB(toStyle, rgb[0], rgb[1], rgb[2]);
-            if (hssfColor != null) {
-                short colorIndex = hssfColor.getIndex();
-                toFont.setColor(colorIndex);
-            }
-        }
+private static HSSFColor getHSSFColorFromRGB(HSSFWorkbook workbook, byte red, byte green, byte blue) {
+    HSSFPalette palette = workbook.getCustomPalette();
+    HSSFColor hssfColor = palette.findColor(red, green, blue);
+
+    if (hssfColor == null) {
+        palette.setColorAtIndex(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex(), red, green, blue);
+        hssfColor = palette.getColor(HSSFColor.HSSFColorPredefined.LAVENDER.getIndex());
     }
 
-    // Copy cell's style
-    toStyle.setAlignment(fromStyle.getAlignment());
-    toStyle.setVerticalAlignment(fromStyle.getVerticalAlignment());
-    toStyle.setDataFormat(fromStyle.getDataFormat());
-    toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
-    toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
+    return hssfColor;
 }
