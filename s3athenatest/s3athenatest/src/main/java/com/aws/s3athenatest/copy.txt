@@ -1,95 +1,27 @@
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import java.io.*;
-
-public class ExcelConverter {
-
-    public static void main(String[] args) {
-        try {
-            // Convert XLSX to XLS
-            convertXlsxToXls("input.xlsx", "output.xls");
-            System.out.println("XLSX to XLS conversion completed successfully.");
-        } catch (Exception e) {
-            e.printStackTrace();
+private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle, HSSFWorkbook targetWorkbook) {
+    // Copy font
+    HSSFFont toFont = targetWorkbook.createFont();
+    XSSFFont fromFont = fromStyle.getFont();
+    toFont.setBold(fromFont.getBold());
+    toFont.setItalic(fromFont.getItalic());
+    toFont.setFontName(fromFont.getFontName());
+    toFont.setFontHeight(fromFont.getFontHeight());
+    
+    // Extract the color index from XSSFColor (if it's not null)
+    XSSFColor xssfColor = fromFont.getXSSFColor();
+    if (xssfColor != null) {
+        byte[] rgb = xssfColor.getRGB();
+        if (rgb != null && rgb.length == 3) {
+            short colorIndex = targetWorkbook.getCustomPalette().findColor(rgb[0], rgb[1], rgb[2]);
+            toFont.setColor(colorIndex);
         }
     }
 
-    public static void convertXlsxToXls(String xlsxFilePath, String xlsFilePath) throws IOException {
-        FileInputStream xlsxFile = new FileInputStream(new File(xlsxFilePath));
-        XSSFWorkbook xlsxWorkbook = new XSSFWorkbook(xlsxFile);
-
-        // Create a new HSSFWorkbook (XLS format)
-        HSSFWorkbook xlsWorkbook = new HSSFWorkbook();
-
-        for (int sheetIndex = 0; sheetIndex < xlsxWorkbook.getNumberOfSheets(); sheetIndex++) {
-            XSSFSheet xlsxSheet = xlsxWorkbook.getSheetAt(sheetIndex);
-            HSSFSheet xlsSheet = xlsWorkbook.createSheet(xlsxSheet.getSheetName());
-
-            for (int rowNum = 0; rowNum <= xlsxSheet.getLastRowNum(); rowNum++) {
-                XSSFRow xlsxRow = xlsxSheet.getRow(rowNum);
-                HSSFRow xlsRow = xlsSheet.createRow(rowNum);
-
-                if (xlsxRow != null) {
-                    for (int cellNum = 0; cellNum <= xlsxRow.getLastCellNum(); cellNum++) {
-                        XSSFCell xlsxCell = xlsxRow.getCell(cellNum);
-                        HSSFCell xlsCell = xlsRow.createCell(cellNum);
-
-                        if (xlsxCell != null) {
-                            // Copy cell value and style
-                            xlsCell.setCellValue(getCellValue(xlsxCell));
-                            copyCellStyle(xlsxCell.getCellStyle(), xlsCell.getCellStyle());
-                        }
-                    }
-                }
-            }
-        }
-
-        // Save the XLS workbook to a file
-        FileOutputStream xlsFile = new FileOutputStream(xlsFilePath);
-        xlsWorkbook.write(xlsFile);
-
-        xlsxFile.close();
-        xlsFile.close();
-    }
-
-    private static String getCellValue(XSSFCell cell) {
-        if (cell == null) {
-            return "";
-        }
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getRichStringCellValue().getString();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    return Double.toString(cell.getNumericCellValue());
-                }
-            case BOOLEAN:
-                return Boolean.toString(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
-        }
-    }
-
-    private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle) {
-        // Copy font
-        HSSFFont toFont = toStyle.getFont();
-        XSSFFont fromFont = fromStyle.getFont();
-        toFont.setBold(fromFont.getBold());
-        toFont.setItalic(fromFont.getItalic());
-        toFont.setFontName(fromFont.getFontName());
-        toFont.setFontHeight(fromFont.getFontHeight());
-        toFont.setColor(fromFont.getXSSFColor());
-
-        // Copy cell's style
-        toStyle.setAlignment(fromStyle.getAlignment());
-        toStyle.setVerticalAlignment(fromStyle.getVerticalAlignment());
-        toStyle.setDataFormat(fromStyle.getDataFormat());
-        toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
-        toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
-    }
+    // Copy cell's style
+    toStyle.setAlignment(fromStyle.getAlignment());
+    toStyle.setVerticalAlignment(fromStyle.getVerticalAlignment());
+    toStyle.setDataFormat(fromStyle.getDataFormat());
+    toStyle.setFillForegroundColor(fromStyle.getFillForegroundColor());
+    toStyle.setFillBackgroundColor(fromStyle.getFillBackgroundColor());
+    toStyle.setFont(toFont);
 }
