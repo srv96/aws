@@ -12,8 +12,11 @@ private static void copyCellStyle(XSSFCellStyle fromStyle, HSSFCellStyle toStyle
     if (xssfColor != null) {
         byte[] rgb = xssfColor.getRGB();
         if (rgb != null && rgb.length == 3) {
-            short colorIndex = targetWorkbook.getCustomPalette().findColor(rgb[0], rgb[1], rgb[2]);
-            toFont.setColor(colorIndex);
+            HSSFColor hssfColor = targetWorkbook.getCustomPalette().findColor(rgb[0], rgb[1], rgb[2]);
+            if (hssfColor != null) {
+                short colorIndex = hssfColor.getIndex();
+                toFont.setColor(colorIndex);
+            }
         }
     }
 
