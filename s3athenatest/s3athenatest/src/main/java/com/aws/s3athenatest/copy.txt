@@ -1,7 +1,8 @@
 public static List<List<String>> removeNthColumn(List<List<String>> inputList, int columnIndex) {
-        return inputList.stream()
-                .map(row -> row.stream()
-                        .filter((value, index) -> index != columnIndex)
-                        .collect(Collectors.toList()))
-                .collect(Collectors.toList());
+        for (List<String> row : inputList) {
+            if (columnIndex < row.size()) {
+                row.remove(columnIndex);
+            }
+        }
+        return inputList;
     }
