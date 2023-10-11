@@ -1,43 +1,33 @@
+ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.*;
 
-public class UniformFontStyling {
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-    public static void main(String[] args) {
-        try {
-            // Load the existing XLSX file
-            FileInputStream fileInputStream = new FileInputStream("input.xlsx");
-            XSSFWorkbook workbook = new XSSFWorkbook(fileInputStream);
-            
-            // Create a font with the desired style
-            Font uniformFont = workbook.createFont();
-            uniformFont.setFontName("Arial"); // Font name (e.g., Arial)
-            uniformFont.setFontHeightInPoints((short) 12); // Font size
-            uniformFont.setBold(true); // Bold
-            uniformFont.setColor(IndexedColors.BLACK.getIndex()); // Font color (e.g., black)
+public class CompactExcelReaderWithSheet {
 
-            // Apply the uniform font style to all cells in all sheets
-            for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
-                XSSFSheet sheet = workbook.getSheetAt(sheetIndex);
-                for (Row row : sheet) {
-                    for (Cell cell : row) {
-                        CellStyle cellStyle = cell.getCellStyle();
-                        cellStyle.setFont(uniformFont);
-                        cell.setCellStyle(cellStyle);
-                    }
-                }
-            }
-
-            // Save the modified workbook to a new file
-            FileOutputStream fileOutputStream = new FileOutputStream("output.xlsx");
-            workbook.write(fileOutputStream);
-            fileOutputStream.close();
-            workbook.close();
-
-            System.out.println("Uniform font styling applied successfully.");
-        } catch (Exception e) {
+    public static List<List<String>> readExcelFile(String filePath, int sheetNumber) {
+        List<List<String>> data = new ArrayList<>();
+        try (Workbook workbook = new HSSFWorkbook(new FileInputStream(filePath)) {
+            Sheet sheet = workbook.getSheetAt(sheetNumber);
+            sheet.forEach(row -> {
+                List<String> rowData = new ArrayList<>();
+                row.forEach(cell -> rowData.add(cell.toString()));
+                data.add(rowData);
+            });
+        } catch (IOException e) {
             e.printStackTrace();
         }
+        return data;
+    }
+
+    public static void main(String[] args) {
+        String filePath = "your_excel_file.xls"; // Replace with your file path
+        int sheetNumber = 0; // Replace with the desired sheet number
+        List<List<String>> excelData = readExcelFile(filePath, sheetNumber);
+        excelData.forEach(System.out::println);
     }
 }
+
