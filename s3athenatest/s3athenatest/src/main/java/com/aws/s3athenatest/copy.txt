@@ -1,13 +1,41 @@
- 
-<dependencies>
-    <dependency>
-        <groupId>org.apache.poi</groupId>
-        <artifactId>poi</artifactId>
-        <version>3.17</version>
-    </dependency>
-    <dependency>
-        <groupId>org.apache.poi</groupId>
-        <artifactId>poi-ooxml</artifactId>
-        <version>3.17</version>
-    </dependency>
-</dependencies>
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ExclusiveRowFinder {
+
+    public static List<List<String>> findExclusiveRows(List<List<String>> base, List<List<String>> target) {
+        List<List<String>> result = new ArrayList<>();
+
+        for (List<String> baseRow : base) {
+            if (!target.contains(baseRow)) {
+                List<String> annotatedRow = new ArrayList<>(baseRow);
+                annotatedRow.add("Base");
+                result.add(annotatedRow);
+            }
+        }
+
+        for (List<String> targetRow : target) {
+            if (!base.contains(targetRow)) {
+                List<String> annotatedRow = new ArrayList<>(targetRow);
+                annotatedRow.add("Target");
+                result.add(annotatedRow);
+            }
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> base = new ArrayList<>();
+        List<List<String>> target = new ArrayList<>();
+
+        // Populate base and target lists with data
+
+        List<List<String>> exclusiveRows = findExclusiveRows(base, target);
+
+        for (List<String> row : exclusiveRows) {
+            System.out.println(row.get(0) + " - from " + row.get(1));
+        }
+    }
+}
