@@ -1,8 +1,51 @@
-public static List<List<String>> removeNthColumn(List<List<String>> inputList, int columnIndex) {
-        for (List<String> row : inputList) {
-            if (columnIndex < row.size()) {
-                row.remove(columnIndex);
-            }
-        }
-        return inputList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class DataFrameComparator {
+
+    public static List<List<String>> findDifferentRows(List<List<String>> base, List<List<String>> target) {
+        CompletableFuture<List<List<String>>> baseFuture = CompletableFuture.supplyAsync(() -> findUniqueRows(base, target, true));
+        CompletableFuture<List<List<String>>> targetFuture = CompletableFuture.supplyAsync(() -> findUniqueRows(target, base, false));
+
+        // Combine the results
+        return baseFuture.thenCombine(targetFuture, (baseResult, targetResult) -> {
+            baseResult.addAll(targetResult);
+            return baseResult;
+        }).join();
     }
+
+    private static List<List<String>> findUniqueRows(List<List<String>> source, List<List<String>> other, boolean isFromBase) {
+        return source.parallelStream()
+                .filter(row -> !containsRow(other, row))
+                .map(row -> {
+                    List<String> newRow = isFromBase ? Stream.of("FromBase").collect(Collectors.toList()) : Stream.of("FromTarget").collect(Collectors.toList());
+                    newRow.addAll(row);
+                    return newRow;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static boolean containsRow(List<List<String>> list, List<String> row) {
+        return list.parallelStream().anyMatch(listRow -> listRow.equals(row));
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> base = List.of(
+            List.of("Alice", "25", "USA"),
+            List.of("Bob", "30", "Canada"),
+            List.of("Charlie", "28", "UK")
+        );
+
+        List<List<String>> target = List.of(
+            List.of("Alice", "25", "USA"),
+            List.of("Eve", "22", "Australia"),
+            List.of("Frank", "32", "Germany")
+        );
+
+        List<List<String>> result = findDifferentRows(base, target);
+
+        result.forEach(row -> System.out.println(String.join(", ", row)));
+    }
+}
