@@ -1,38 +1,36 @@
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class CompactExclusiveRowFinder {
-
-    public static List<List<String>> findExclusiveRows(List<List<String>> base, List<List<String>> target) {
-        List<List<String>> result = new ArrayList<>();
-        
-        for (List<String> baseRow : base) {
-            if (!target.contains(baseRow)) {
-                baseRow.add("Base");
-                result.add(baseRow);
-            }
+public static List<List<String>> trimStringList(List<List<String>> inputList) {
+        return inputList.stream()
+                .map(innerList -> innerList.stream()
+                        .map(str -> str != null ? str.trim() : null)
+                        .collect(Collectors.toList()))
+                .collect(Collectors.toList());
+    }
+public static List<List<String>> removeNthList(List<List<String>> inputList, int n) {
+        if (n >= 0 && n < inputList.size()) {
+            inputList.remove(n);
+        }
+        return inputList;
+    }
+public static List<List<String>> sortListByColumn(List<List<String>> inputList, String columnName) {
+        if (inputList.isEmpty() || columnName == null || columnName.isEmpty()) {
+            return new ArrayList<>();
         }
 
-        for (List<String> targetRow : target) {
-            if (!base.contains(targetRow)) {
-                targetRow.add("Target");
-                result.add(targetRow);
-            }
+        // Find the index of the specified column in the header row
+        int columnIndex = inputList.get(0).indexOf(columnName);
+        if (columnIndex == -1) {
+            System.out.println("Column not found: " + columnName);
+            return new ArrayList<>();
         }
 
-        return result;
+        // Sort the list based on the specified column (excluding the header)
+        List<List<String>> sortedList = inputList.stream()
+                .skip(1) // Skip the header row
+                .sorted(Comparator.comparing(list -> list.get(columnIndex)))
+                .collect(Collectors.toList());
+
+        // Add the header row back to the sorted list
+        sortedList.add(0, inputList.get(0));
+
+        return sortedList;
     }
-
-    public static void main(String[] args) {
-        List<List<String>> base = new ArrayList<>();
-        List<List<String>> target = new ArrayList<>();
-
-        // Populate base and target lists with data
-
-        List<List<String>> exclusiveRows = findExclusiveRows(base, target);
-
-        exclusiveRows.forEach(row -> System.out.println(row.get(0) + " - from " + row.get(1)));
-    }
-}
-
