@@ -1,33 +1,13 @@
- import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class CompactExcelReaderWithSheet {
-
-    public static List<List<String>> readExcelFile(String filePath, int sheetNumber) {
-        List<List<String>> data = new ArrayList<>();
-        try (Workbook workbook = new HSSFWorkbook(new FileInputStream(filePath)) {
-            Sheet sheet = workbook.getSheetAt(sheetNumber);
-            sheet.forEach(row -> {
-                List<String> rowData = new ArrayList<>();
-                row.forEach(cell -> rowData.add(cell.toString()));
-                data.add(rowData);
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return data;
-    }
-
-    public static void main(String[] args) {
-        String filePath = "your_excel_file.xls"; // Replace with your file path
-        int sheetNumber = 0; // Replace with the desired sheet number
-        List<List<String>> excelData = readExcelFile(filePath, sheetNumber);
-        excelData.forEach(System.out::println);
-    }
-}
-
+ 
+<dependencies>
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>3.17</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>3.17</version>
+    </dependency>
+</dependencies>
