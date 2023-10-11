@@ -1,36 +1,7 @@
-public static List<List<String>> trimStringList(List<List<String>> inputList) {
+public static List<List<String>> removeNthColumn(List<List<String>> inputList, int columnIndex) {
         return inputList.stream()
-                .map(innerList -> innerList.stream()
-                        .map(str -> str != null ? str.trim() : null)
+                .map(row -> row.stream()
+                        .filter((value, index) -> index != columnIndex)
                         .collect(Collectors.toList()))
                 .collect(Collectors.toList());
-    }
-public static List<List<String>> removeNthList(List<List<String>> inputList, int n) {
-        if (n >= 0 && n < inputList.size()) {
-            inputList.remove(n);
-        }
-        return inputList;
-    }
-public static List<List<String>> sortListByColumn(List<List<String>> inputList, String columnName) {
-        if (inputList.isEmpty() || columnName == null || columnName.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // Find the index of the specified column in the header row
-        int columnIndex = inputList.get(0).indexOf(columnName);
-        if (columnIndex == -1) {
-            System.out.println("Column not found: " + columnName);
-            return new ArrayList<>();
-        }
-
-        // Sort the list based on the specified column (excluding the header)
-        List<List<String>> sortedList = inputList.stream()
-                .skip(1) // Skip the header row
-                .sorted(Comparator.comparing(list -> list.get(columnIndex)))
-                .collect(Collectors.toList());
-
-        // Add the header row back to the sorted list
-        sortedList.add(0, inputList.get(0));
-
-        return sortedList;
     }
