@@ -1,34 +1,13 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class ReadIntegerListFromFile {
-    public static void main(String[] args) {
-        String fileName = "integer_list.txt"; // Change this to the path of your text file
-        List<Integer> integerList = readIntegerListFromFile(fileName);
-
-        System.out.println("Read List of Integers:");
-        for (Integer num : integerList) {
-            System.out.println(num);
-        }
-    }
-
-    public static List<Integer> readIntegerListFromFile(String fileName) {
-        List<Integer> integerList = new ArrayList<>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName)) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                // Assuming one integer per line in the text file
-                int number = Integer.parseInt(line);
-                integerList.add(number);
-            }
+public static void writeLongListToFile(String fileName, List<Long> longList) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
+            longList.forEach(number -> {
+                try {
+                    bw.write(number.toString() + "\n");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return integerList;
     }
-}
