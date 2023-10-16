@@ -1,51 +1,34 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class DataFrameComparator {
-
-    public static List<List<String>> findDifferentRows(List<List<String>> base, List<List<String>> target) {
-        CompletableFuture<List<List<String>>> baseFuture = CompletableFuture.supplyAsync(() -> findUniqueRows(base, target, true));
-        CompletableFuture<List<List<String>>> targetFuture = CompletableFuture.supplyAsync(() -> findUniqueRows(target, base, false));
-
-        // Combine the results
-        return baseFuture.thenCombine(targetFuture, (baseResult, targetResult) -> {
-            baseResult.addAll(targetResult);
-            return baseResult;
-        }).join();
-    }
-
-    private static List<List<String>> findUniqueRows(List<List<String>> source, List<List<String>> other, boolean isFromBase) {
-        return source.parallelStream()
-                .filter(row -> !containsRow(other, row))
-                .map(row -> {
-                    List<String> newRow = isFromBase ? Stream.of("FromBase").collect(Collectors.toList()) : Stream.of("FromTarget").collect(Collectors.toList());
-                    newRow.addAll(row);
-                    return newRow;
-                })
-                .collect(Collectors.toList());
-    }
-
-    private static boolean containsRow(List<List<String>> list, List<String> row) {
-        return list.parallelStream().anyMatch(listRow -> listRow.equals(row));
-    }
-
+public class ReadIntegerListFromFile {
     public static void main(String[] args) {
-        List<List<String>> base = List.of(
-            List.of("Alice", "25", "USA"),
-            List.of("Bob", "30", "Canada"),
-            List.of("Charlie", "28", "UK")
-        );
+        String fileName = "integer_list.txt"; // Change this to the path of your text file
+        List<Integer> integerList = readIntegerListFromFile(fileName);
 
-        List<List<String>> target = List.of(
-            List.of("Alice", "25", "USA"),
-            List.of("Eve", "22", "Australia"),
-            List.of("Frank", "32", "Germany")
-        );
+        System.out.println("Read List of Integers:");
+        for (Integer num : integerList) {
+            System.out.println(num);
+        }
+    }
 
-        List<List<String>> result = findDifferentRows(base, target);
+    public static List<Integer> readIntegerListFromFile(String fileName) {
+        List<Integer> integerList = new ArrayList<>();
 
-        result.forEach(row -> System.out.println(String.join(", ", row)));
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // Assuming one integer per line in the text file
+                int number = Integer.parseInt(line);
+                integerList.add(number);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return integerList;
     }
 }
