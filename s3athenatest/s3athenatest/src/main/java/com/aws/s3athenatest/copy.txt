@@ -1,13 +1,22 @@
-public static void writeLongListToFile(String fileName, List<Long> longList) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-            longList.forEach(number -> {
-                try {
-                    bw.write(number.toString() + "\n");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+This year, my primary focus was on the omrap-aws-migration initiative.
+
+which include mostly poc works
+1. written terraform script for setting up infrastructure for s3, athena, glue-catelog, secret-manager, dynamodb etc.
+2. I engaged with the AWS migration team and discussed s3 life-cycle-rules wrt hadoop data achival 
+3. Have written utility code for Performance and Cost Analysis Testing of dynamodb and share the results with Quan and Dewang .
+4. Have written utility code for Hadoop Data Analysis which involves gathering statistics on file sizes, file counts, and folder sizes within the HDFS
+5. Written utility code for hbase and hadoop data migration to s3 and dynamodb
+6. Collaborated closely with ptr team regarding the omrap data achival solution, understood the ptr data migration strategy based on that provided omrap-prod source-destination information to them.
+
+Aws intregration with omrap-services
+
+1. have written omrap-aws-component which is being made to replace the existing omrap-common-librery.
+   here added efficient functionality with thoughtful programming patten which is usefull for interecting with various AWS services like s3, secret-manager,athena,dynamodb and postgres db 
+   this common-component is being used for various omrap-aws-intregrations by aws-migration-team
+
+2. have done aws integration to omrap-data-extraction-services
+	My work here involved replacing the existing source and destination systems (Hadoop and HBase) with AWS components, specifically S3 and Postgres.I have done setup of metadata repository for special customers, utilizing it for data extraction based on Kafka events. In collaboration with Dewang, we integrated AWS with the Spark consumer service, successfully processing and storing special customer data in S3 without any Hadoop dependencies.
+
+omrap report sql defect fixes
+	Currently I am working with omrap-reporting-team and responsible for fixing defect in existing reports,
+	I interact with testing and operation teams and fix the sqls queries by taking help from reporting team members.
