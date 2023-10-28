@@ -22,3 +22,5 @@ omrap report sql defect fixes
 	I interact with testing and operation teams and fix the sqls queries by taking help from reporting team members.
 
 Throughout the year, I've consistently focused on delivering appropriate solutions to address the needs of our clients. Through the POC work I undertook this year, I have laid the groundwork for streamlined solutions and which will benefit our future projects.
+
+In context of teamwork I have actively collaborated with the PTR team, providing knowledge transfer to team members and other teams member ,disscused with other teams about omrap architecture with respect to data achival strategy and discussed how can we can leverage there solution so that it required less effort to migrate and archive our data
