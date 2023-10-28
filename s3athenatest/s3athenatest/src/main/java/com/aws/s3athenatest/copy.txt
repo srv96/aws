@@ -20,3 +20,5 @@ Aws intregration with omrap-services
 omrap report sql defect fixes
 	Currently I am working with omrap-reporting-team and responsible for fixing defect in existing reports,
 	I interact with testing and operation teams and fix the sqls queries by taking help from reporting team members.
+
+Throughout the year, I've consistently focused on delivering appropriate solutions to address the needs of our clients. Through the POC work I undertook this year, I have laid the groundwork for streamlined solutions and which will benefit our future projects.
