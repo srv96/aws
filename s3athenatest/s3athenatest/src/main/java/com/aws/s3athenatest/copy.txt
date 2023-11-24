@@ -1,1 +1,2 @@
-=IF(ISNUMBER(MATCH(A1, B:B, 0)), IF(LEN(B1) > 0, INDEX(B:B, MATCH(A1, B:B, 0)), ""), "")
+
+ls -l --time=modification --reverse --human-readable --color=auto | awk 'BEGIN {print "Permissions\tLinks\tOwner\tGroup\tSize\tLast Modified\tFile Name"} {print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 " " $7 "\t" $8}'
