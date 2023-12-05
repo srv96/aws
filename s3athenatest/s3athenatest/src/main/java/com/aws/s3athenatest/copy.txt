@@ -1,44 +1,47 @@
-private static void processExtractedContent(File file, String insideParentheses, List<SqlQueryInfo> sqlQueryList) {
-    // Remove leading and trailing spaces
-    insideParentheses = insideParentheses.trim();
+private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
+    List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
 
-    // Find the index of the first comma
-    int firstCommaIndex = insideParentheses.indexOf(',');
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        StringBuilder fileContent = new StringBuilder();
+        String line;
 
-    if (firstCommaIndex != -1) {
-        // Extract the reportId (assuming it's the first number)
-        String reportIdString = insideParentheses.substring(0, firstCommaIndex).trim();
+        // Read the entire file into a single string
+        while ((line = reader.readLine()) != null) {
+            fileContent.append(line).append(" ");
+        }
 
-        // Find the index of the second comma
-        int secondCommaIndex = insideParentheses.indexOf(',', firstCommaIndex + 1);
+        // Convert to lowercase for case-insensitive search
+        String lowerContent = fileContent.toString().toLowerCase();
 
-        if (secondCommaIndex != -1) {
-            // Extract the sqlId (assuming it's the second number)
-            String sqlIdString = insideParentheses.substring(firstCommaIndex + 1, secondCommaIndex).trim();
+        // Use a more flexible pattern for cs_bsp_report_query
+        String patternString = "\\bcs_bsp_report_query\\s*\\(";
+        Pattern pattern = Pattern.compile(patternString);
+        
+        // Find occurrences of the pattern
+        Matcher matcher = pattern.matcher(lowerContent);
+        while (matcher.find()) {
+            // Find the starting index of the pattern
+            int index = matcher.start();
 
-            // Extract the rest of the content (query and sysdate)
-            String restOfContent = insideParentheses.substring(secondCommaIndex + 1).trim();
+            // Find the next opening parenthesis after the pattern
+            int openIndex = lowerContent.indexOf("(", index);
 
-            // Find the index of the last single quote
-            int lastQuoteIndex = restOfContent.lastIndexOf('\'');
+            if (openIndex != -1) {
+                // Find the closing parenthesis corresponding to the opening parenthesis
+                int closeIndex = findClosingParenthesis(lowerContent, openIndex);
 
-            if (lastQuoteIndex != -1) {
-                // Extract the sqlQuery
-                String sqlQuery = restOfContent.substring(0, lastQuoteIndex);
-
-                // Create SqlQueryInfo and add to the list
-                try {
-                    int reportId = Integer.parseInt(reportIdString);
-                    int sqlId = Integer.parseInt(sqlIdString);
-
-                    String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
-
-                    sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
-                } catch (NumberFormatException e) {
-                    // Handle parsing errors if needed
-                    e.printStackTrace();
+                if (closeIndex != -1) {
+                    // Extract the content inside the parentheses
+                    String insideParentheses = fileContent.substring(openIndex + 1, closeIndex);
+                    processExtractedContent(file, insideParentheses, sqlQueryList);
                 }
             }
         }
+
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+
+    return sqlQueryList;
 }
+String patternString = "\\bcs_bsp_report_query\\b.*\\bvalues\\s*\\(";
