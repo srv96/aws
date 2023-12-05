@@ -1,1 +1,1 @@
-Pattern.compile("\\s*insert\\s+into\\s+cs_bsp_report_query\\s+values\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*'([^']*)'\\s*,\\s*sysdate\\s*\\)", Pattern.CASE_INSENSITIVE);
+Pattern pattern = Pattern.compile("\\s*insert\\s+into\\s+cs_bsp_report_query\\s+values\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*'([^']*)'\\s*,\\s*sysdate\\s*\\)\\s*", Pattern.CASE_INSENSITIVE);
