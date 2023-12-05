@@ -1,5 +1,83 @@
-<dependency>
-        <groupId>com.oracle.database.jdbc</groupId>
-        <artifactId>ojdbc8</artifactId>
-        <version>19.8.0.0</version> <!-- Use the latest version available -->
-    </dependency>
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class SQLReconciliation {
+
+    public static void main(String[] args) {
+        // Replace these paths with the actual paths to your CSV file and SQL folder
+        String csvFilePath = "path/to/your/csv/file.csv";
+        String sqlFolderPath = "path/to/your/sql/folder";
+
+        reconcileSQLQueries(csvFilePath, sqlFolderPath);
+    }
+
+    private static void reconcileSQLQueries(String csvFilePath, String sqlFolderPath) {
+        try {
+            // Read CSV file
+            BufferedReader csvReader = new BufferedReader(new FileReader(csvFilePath));
+            String line;
+            while ((line = csvReader.readLine()) != null) {
+                String[] data = line.split(",");
+                if (data.length >= 4) {
+                    String reportId = data[0].trim();
+                    String sqlId = data[2].trim();
+                    String reportName = data[1].trim();
+                    String sqlQuery = data[3].trim();
+
+                    // Find SQL file in the specified folder
+                    String sqlFileName = "On-Boarding Sqls - " + reportName;
+                    String sqlFilePath = findSQLFile(sqlFolderPath, sqlFileName);
+
+                    if (sqlFilePath != null) {
+                        // Extract SQL query from the SQL file
+                        String extractedQuery = extractSQLQuery(sqlFilePath, reportId, sqlId, sqlQuery);
+
+                        // Append the extracted query to the CSV file
+                        appendExtractedQueryToCSV(csvFilePath, reportId, sqlId, sqlQuery, extractedQuery);
+                    } else {
+                        System.out.println("SQL file not found for report: " + reportName);
+                    }
+                }
+            }
+            csvReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String findSQLFile(String sqlFolderPath, String sqlFileName) throws IOException {
+        Path folderPath = Paths.get(sqlFolderPath);
+        try (var stream = Files.walk(folderPath)) {
+            return stream
+                    .filter(path -> path.getFileName().toString().equalsIgnoreCase(sqlFileName))
+                    .findFirst()
+                    .map(Path::toString)
+                    .orElse(null);
+        }
+    }
+
+    private static String extractSQLQuery(String sqlFilePath, String reportId, String sqlId, String originalQuery) throws IOException {
+        String sqlContent = Files.readString(Paths.get(sqlFilePath));
+        String regex = "insert into cs_bsp_report_query value \\(" + reportId + ", " + sqlId + ", '(.+?)'\\)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(sqlContent);
+        if (matcher.find()) {
+            String extractedQuery = matcher.group(1);
+            // Replace double quotes with single quotes
+            extractedQuery = extractedQuery.replace("''", "'");
+            return extractedQuery;
+        } else {
+            System.out.println("Insert query not found for report: " + reportId);
+            return originalQuery; // Return original query if not found
+        }
+    }
+
+    private static void appendExtractedQueryToCSV(String csvFilePath, String reportId, String sqlId, String originalQuery, String extractedQuery) throws IOException {
+        String newLine = String.format("%s,%s,%s,%s,%s%n", reportId, reportId, sqlId, originalQuery, extractedQuery);
+        Files.write(Paths.get(csvFilePath), newLine.getBytes(), java.nio.file.StandardOpenOption.APPEND);
+    }
+}
