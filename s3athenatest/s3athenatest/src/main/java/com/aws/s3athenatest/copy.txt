@@ -1,1 +1,76 @@
-Pattern pattern = Pattern.compile("\\s*insert\\s+into\\s+cs_bsp_report_query\\s+values\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*'([^']*)'\\s*,\\s*sysdate\\s*\\)\\s*", Pattern.CASE_INSENSITIVE);
+private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
+    List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        StringBuilder fileContent = new StringBuilder();
+        String line;
+
+        // Read the entire file into a single string
+        while ((line = reader.readLine()) != null) {
+            fileContent.append(line).append(" ");
+        }
+
+        // Convert to lowercase for case-insensitive search
+        String lowerContent = fileContent.toString().toLowerCase();
+
+        // Find occurrences of cs_bsp_report_query
+        int index = lowerContent.indexOf("cs_bsp_report_query");
+
+        while (index != -1) {
+            // Find the next opening parenthesis after cs_bsp_report_query
+            int openIndex = lowerContent.indexOf("(", index);
+
+            if (openIndex != -1) {
+                // Find the closing parenthesis corresponding to the opening parenthesis
+                int closeIndex = findClosingParenthesis(lowerContent, openIndex);
+
+                if (closeIndex != -1) {
+                    // Extract the content inside the parentheses
+                    String insideParentheses = fileContent.substring(openIndex + 1, closeIndex);
+                    processExtractedContent(file, insideParentheses, sqlQueryList);
+                }
+            }
+
+            // Move to the next occurrence of cs_bsp_report_query
+            index = lowerContent.indexOf("cs_bsp_report_query", index + 1);
+        }
+
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    return sqlQueryList;
+}
+
+private static void processExtractedContent(File file, String insideParentheses, List<SqlQueryInfo> sqlQueryList) {
+    // Split the content inside parentheses using commas
+    String[] values = insideParentheses.split("\\s*,\\s*");
+
+    if (values.length == 3) {
+        int reportId = Integer.parseInt(values[0]);
+        int sqlId = Integer.parseInt(values[1]);
+        String sqlQuery = values[2].replace("''", "'");
+        String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+
+        sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
+    }
+}
+
+private static int findClosingParenthesis(String content, int openIndex) {
+    int count = 1;
+    int i = openIndex + 1;
+
+    while (i < content.length() && count > 0) {
+        char c = content.charAt(i);
+
+        if (c == '(') {
+            count++;
+        } else if (c == ')') {
+            count--;
+        }
+
+        i++;
+    }
+
+    return (count == 0) ? i - 1 : -1;
+}
