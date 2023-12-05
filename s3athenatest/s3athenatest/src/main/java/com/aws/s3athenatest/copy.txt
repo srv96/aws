@@ -1,76 +1,44 @@
-private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
-    List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
+private static void processExtractedContent(File file, String insideParentheses, List<SqlQueryInfo> sqlQueryList) {
+    // Remove leading and trailing spaces
+    insideParentheses = insideParentheses.trim();
 
-    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-        StringBuilder fileContent = new StringBuilder();
-        String line;
+    // Find the index of the first comma
+    int firstCommaIndex = insideParentheses.indexOf(',');
 
-        // Read the entire file into a single string
-        while ((line = reader.readLine()) != null) {
-            fileContent.append(line).append(" ");
-        }
+    if (firstCommaIndex != -1) {
+        // Extract the reportId (assuming it's the first number)
+        String reportIdString = insideParentheses.substring(0, firstCommaIndex).trim();
 
-        // Convert to lowercase for case-insensitive search
-        String lowerContent = fileContent.toString().toLowerCase();
+        // Find the index of the second comma
+        int secondCommaIndex = insideParentheses.indexOf(',', firstCommaIndex + 1);
 
-        // Find occurrences of cs_bsp_report_query
-        int index = lowerContent.indexOf("cs_bsp_report_query");
+        if (secondCommaIndex != -1) {
+            // Extract the sqlId (assuming it's the second number)
+            String sqlIdString = insideParentheses.substring(firstCommaIndex + 1, secondCommaIndex).trim();
 
-        while (index != -1) {
-            // Find the next opening parenthesis after cs_bsp_report_query
-            int openIndex = lowerContent.indexOf("(", index);
+            // Extract the rest of the content (query and sysdate)
+            String restOfContent = insideParentheses.substring(secondCommaIndex + 1).trim();
 
-            if (openIndex != -1) {
-                // Find the closing parenthesis corresponding to the opening parenthesis
-                int closeIndex = findClosingParenthesis(lowerContent, openIndex);
+            // Find the index of the single quote, assuming it marks the start of the query
+            int quoteIndex = restOfContent.indexOf('\'');
 
-                if (closeIndex != -1) {
-                    // Extract the content inside the parentheses
-                    String insideParentheses = fileContent.substring(openIndex + 1, closeIndex);
-                    processExtractedContent(file, insideParentheses, sqlQueryList);
+            if (quoteIndex != -1) {
+                // Extract the sqlQuery
+                String sqlQuery = restOfContent.substring(quoteIndex + 1, restOfContent.indexOf('\'', quoteIndex + 1));
+
+                // Create SqlQueryInfo and add to the list
+                try {
+                    int reportId = Integer.parseInt(reportIdString);
+                    int sqlId = Integer.parseInt(sqlIdString);
+
+                    String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+
+                    sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
+                } catch (NumberFormatException e) {
+                    // Handle parsing errors if needed
+                    e.printStackTrace();
                 }
             }
-
-            // Move to the next occurrence of cs_bsp_report_query
-            index = lowerContent.indexOf("cs_bsp_report_query", index + 1);
         }
-
-    } catch (IOException e) {
-        e.printStackTrace();
     }
-
-    return sqlQueryList;
-}
-
-private static void processExtractedContent(File file, String insideParentheses, List<SqlQueryInfo> sqlQueryList) {
-    // Split the content inside parentheses using commas
-    String[] values = insideParentheses.split("\\s*,\\s*");
-
-    if (values.length == 3) {
-        int reportId = Integer.parseInt(values[0]);
-        int sqlId = Integer.parseInt(values[1]);
-        String sqlQuery = values[2].replace("''", "'");
-        String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
-
-        sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
-    }
-}
-
-private static int findClosingParenthesis(String content, int openIndex) {
-    int count = 1;
-    int i = openIndex + 1;
-
-    while (i < content.length() && count > 0) {
-        char c = content.charAt(i);
-
-        if (c == '(') {
-            count++;
-        } else if (c == ')') {
-            count--;
-        }
-
-        i++;
-    }
-
-    return (count == 0) ? i - 1 : -1;
 }
