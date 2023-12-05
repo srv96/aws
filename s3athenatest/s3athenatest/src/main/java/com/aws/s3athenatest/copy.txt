@@ -1,1 +1,43 @@
-"(?i)insert\\s+into\\s+cs_bsp_report_query\\s*(?:\\([^)]+\\))?\\s*values\\s*"
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class CSVProcessor {
+
+    public static void main(String[] args) {
+        String inputFilePath = "input.csv"; // Replace with your input CSV file path
+        String outputFilePath = "output.csv"; // Replace with your desired output CSV file path
+
+        processCSV(inputFilePath, outputFilePath);
+    }
+
+    private static void processCSV(String inputFilePath, String outputFilePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
+             FileWriter writer = new FileWriter(outputFilePath)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 2) {
+                    parts[1] = processFileName(parts[1]);
+                }
+                writer.write(String.join(",", parts) + "\n");
+            }
+
+            System.out.println("CSV processing completed.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String processFileName(String fileName) {
+        int indexOfHyphen = fileName.indexOf("-");
+        if (indexOfHyphen != -1) {
+            return fileName.substring(indexOfHyphen + 1);
+        } else {
+            return fileName;
+        }
+    }
+}
