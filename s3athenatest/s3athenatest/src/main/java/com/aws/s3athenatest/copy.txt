@@ -23,7 +23,7 @@ private static void processExtractedContent(File file, String insideParentheses,
             int quoteIndex = restOfContent.indexOf('\'');
 
             if (quoteIndex != -1) {
-                // Find the index of the next single quote after the initial quote
+                // Find the index of the next single quote after the starting quote
                 int endQuoteIndex = restOfContent.indexOf('\'', quoteIndex + 1);
 
                 if (endQuoteIndex != -1) {
