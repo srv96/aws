@@ -1,1 +1,1 @@
-"(?i)insert\\s+into\\s+cs_bsp_report_query(?:\\s*\\([^)]*\\))?\\s*values\\s*\\([^)]*\\)"
+"(?i)insert\\s+into\\s+cs_bsp_report_query\\s*(?:\\([^)]+\\))?\\s*values\\s*"
