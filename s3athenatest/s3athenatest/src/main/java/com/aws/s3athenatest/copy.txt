@@ -1,112 +1,30 @@
-import java.io.*;
-import java.util.regex.*;
-import java.util.ArrayList;
-import java.util.List;
+private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
+    List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
 
-public class SqlQueryExtractor {
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        StringBuilder fileContent = new StringBuilder();
+        String line;
 
-    public static void main(String[] args) {
-        String rootFolder = "path/to/your/folder";
-        List<SqlQueryInfo> sqlQueryList = processFolder(rootFolder);
+        // Read the entire file into a single string
+        while ((line = reader.readLine()) != null) {
+            fileContent.append(line).append(" ");
+        }
 
-        // Output the results to a CSV file
-        writeToCsv(sqlQueryList);
+        // Define your pattern for the SQL query
+        Pattern pattern = Pattern.compile("insert into cs_bsp_report_query values \\( (\\d+) , (\\d+) , '([^']*)', sysdate\\)");
+        Matcher matcher = pattern.matcher(fileContent.toString());
+
+        while (matcher.find()) {
+            int reportId = Integer.parseInt(matcher.group(1));
+            int sqlId = Integer.parseInt(matcher.group(2));
+            String sqlQuery = matcher.group(3).replace("''", "'");
+            String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+
+            sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
     }
 
-    private static List<SqlQueryInfo> processFolder(String folderPath) {
-        File rootFolder = new File(folderPath);
-        List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
-
-        if (rootFolder.isDirectory()) {
-            for (File file : rootFolder.listFiles()) {
-                if (file.isFile() && file.getName().startsWith("On-Boarding Sqls - ") && file.getName().endsWith(".sql")) {
-                    List<SqlQueryInfo> queries = extractQueriesFromFile(file);
-                    sqlQueryList.addAll(queries);
-                } else if (file.isDirectory()) {
-                    List<SqlQueryInfo> queries = processFolder(file.getAbsolutePath());
-                    sqlQueryList.addAll(queries);
-                }
-            }
-        }
-
-        return sqlQueryList;
-    }
-
-    private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
-        List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            int lineCount = 0;
-
-            while ((line = reader.readLine()) != null) {
-                lineCount++;
-
-                // Define your pattern for the SQL query
-                Pattern pattern = Pattern.compile("insert into cs_bsp_report_query values \\( (\\d+) , (\\d+) , '([^']*)', sysdate\\)");
-                Matcher matcher = pattern.matcher(line);
-
-                while (matcher.find()) {
-                    int reportId = Integer.parseInt(matcher.group(1));
-                    int sqlId = Integer.parseInt(matcher.group(2));
-                    String sqlQuery = matcher.group(3).replace("''", "'");
-                    String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
-
-                    sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery, lineCount));
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return sqlQueryList;
-    }
-
-    private static void writeToCsv(List<SqlQueryInfo> sqlQueryList) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter("output.csv"))) {
-            writer.println("report_id,filename,sql_id,sql_query,line_number");
-
-            for (SqlQueryInfo query : sqlQueryList) {
-                writer.printf("%d,%s,%d,%s,%d%n", query.getReportId(), query.getFileName(), query.getSqlId(), query.getSqlQuery(), query.getLineNumber());
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static class SqlQueryInfo {
-        private int reportId;
-        private String fileName;
-        private int sqlId;
-        private String sqlQuery;
-        private int lineNumber;
-
-        public SqlQueryInfo(int reportId, String fileName, int sqlId, String sqlQuery, int lineNumber) {
-            this.reportId = reportId;
-            this.fileName = fileName;
-            this.sqlId = sqlId;
-            this.sqlQuery = sqlQuery;
-            this.lineNumber = lineNumber;
-        }
-
-        public int getReportId() {
-            return reportId;
-        }
-
-        public String getFileName() {
-            return fileName;
-        }
-
-        public int getSqlId() {
-            return sqlId;
-        }
-
-        public String getSqlQuery() {
-            return sqlQuery;
-        }
-
-        public int getLineNumber() {
-            return lineNumber;
-        }
-    }
+    return sqlQueryList;
 }
