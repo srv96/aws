@@ -1,45 +1,5 @@
-import oracle.jdbc.pool.OracleDataSource;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Properties;
-
-public class OracleJdbcKerberosConnection {
-
-    private static final String HOSTNAME = "your_oracle_host";
-    private static final int PORT = 1521; // Replace with your actual port
-    private static final String SERVICE_NAME = "your_oracle_service";
-    private static final String KRB5_FILE_PATH = "/path/to/krb5.conf";
-    private static final String CREDENTIAL_CACHE_PATH = "/path/to/your/credential_cache_file";
-
-    public static Connection getConnection() throws SQLException {
-        OracleDataSource dataSource = new OracleDataSource();
-
-        // Set Oracle database connection properties
-        dataSource.setURL("jdbc:oracle:thin:@" + HOSTNAME + ":" + PORT + "/" + SERVICE_NAME);
-        dataSource.setUser("username"); // Replace with your Oracle username
-        dataSource.setPassword("password"); // Replace with your Oracle password
-
-        // Set Kerberos properties
-        Properties kerberosProperties = new Properties();
-        kerberosProperties.setProperty("java.security.krb5.conf", KRB5_FILE_PATH);
-        kerberosProperties.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
-        kerberosProperties.setProperty("oracle.net.authentication_services", "(KERBEROS5)");
-
-        // Set the location of the credential cache (keytab)
-        kerberosProperties.setProperty("oracle.net.kerberos.5.conf", CREDENTIAL_CACHE_PATH);
-
-        dataSource.setConnectionProperties(kerberosProperties);
-
-        return dataSource.getConnection();
-    }
-
-    public static void main(String[] args) {
-        try (Connection connection = getConnection()) {
-            // Use the connection as needed
-            System.out.println("Connected to Oracle database!");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-}
+<dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc8</artifactId>
+        <version>19.8.0.0</version> <!-- Use the latest version available -->
+    </dependency>
