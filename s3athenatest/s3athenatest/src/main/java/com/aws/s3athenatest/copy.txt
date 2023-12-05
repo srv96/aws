@@ -1,52 +1,43 @@
+import oracle.jdbc.pool.OracleDataSource;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
 
-public class KerberosJdbcExample {
+public class OracleJdbcKerberosConnection {
 
-    private static final String JDBC_URL = "jdbc:hive2://your-hive-server:10000/your-database";
-    private static final String JDBC_DRIVER = "org.apache.hive.jdbc.HiveDriver";
+    private static final String HOSTNAME = "your_oracle_host";
+    private static final int PORT = 1521; // Replace with your actual port
+    private static final String SERVICE_NAME = "your_oracle_service";
+    private static final String KRB5_FILE_PATH = "/path/to/krb5.conf";
+    private static final String CREDENTIAL_CACHE_PATH = "/path/to/your/credential_cache_file";
 
-    public static void main(String[] args) {
-        try {
-            // Load JDBC driver
-            Class.forName(JDBC_DRIVER);
+    public static Connection getConnection() throws SQLException {
+        OracleDataSource dataSource = new OracleDataSource();
 
-            // Set Kerberos properties
-            Properties properties = new Properties();
-            properties.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
-            properties.setProperty("java.security.auth.login.config", "/path/to/jaas.conf");
+        // Set Oracle database connection properties
+        dataSource.setURL("jdbc:oracle:thin:@" + HOSTNAME + ":" + PORT + "/" + SERVICE_NAME);
+        dataSource.setUser("username"); // Replace with your Oracle username
+        dataSource.setPassword("password"); // Replace with your Oracle password
 
-            // Establish JDBC connection
-            Connection connection = DriverManager.getConnection(JDBC_URL, properties);
+        // Set Kerberos properties
+        Properties kerberosProperties = new Properties();
+        kerberosProperties.setProperty("java.security.krb5.conf", KRB5_FILE_PATH);
+        kerberosProperties.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
+        kerberosProperties.setProperty("oracle.net.authentication_services", "(KERBEROS5)");
 
-            // Execute a query
-            String query = "SELECT * FROM your_table";
-            executeQuery(connection, query);
+        // Set the location of the credential cache (keytab)
+        kerberosProperties.setProperty("oracle.net.kerberos.5.conf", CREDENTIAL_CACHE_PATH);
 
-            // Close the connection
-            connection.close();
-        } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
-        }
+        dataSource.setConnectionProperties(kerberosProperties);
+
+        return dataSource.getConnection();
     }
 
-    private static void executeQuery(Connection connection, String query) {
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(query)) {
-
-            // Process the result set
-            while (resultSet.next()) {
-                // Retrieve data from the result set
-                String column1 = resultSet.getString("column1");
-                int column2 = resultSet.getInt("column2");
-
-                // Do something with the data
-                System.out.println("Column1: " + column1 + ", Column2: " + column2);
-            }
+    public static void main(String[] args) {
+        try (Connection connection = getConnection()) {
+            // Use the connection as needed
+            System.out.println("Connected to Oracle database!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
