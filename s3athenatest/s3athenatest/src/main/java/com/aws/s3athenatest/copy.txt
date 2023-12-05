@@ -2,40 +2,46 @@ private static void processExtractedContent(File file, String insideParentheses,
     // Remove leading and trailing spaces
     insideParentheses = insideParentheses.trim();
 
-    // Find the index of 'sysdate'
-    int sysdateIndex = insideParentheses.indexOf("sysdate");
+    // Find the index of the first comma
+    int firstCommaIndex = insideParentheses.indexOf(',');
 
-    if (sysdateIndex != -1) {
-        // Extract the substring before 'sysdate'
-        String contentBeforeSysdate = insideParentheses.substring(0, sysdateIndex).trim();
+    if (firstCommaIndex != -1) {
+        // Extract the reportId (assuming it's the first number)
+        String reportIdString = insideParentheses.substring(0, firstCommaIndex).trim();
 
-        // Find the last occurrence of single quote in the substring before 'sysdate'
-        int lastQuoteIndex = contentBeforeSysdate.lastIndexOf('\'');
+        // Find the index of the second comma
+        int secondCommaIndex = insideParentheses.indexOf(',', firstCommaIndex + 1);
 
-        if (lastQuoteIndex != -1) {
-            // Extract the sqlQuery
-            String sqlQuery = contentBeforeSysdate.substring(lastQuoteIndex + 1);
+        if (secondCommaIndex != -1) {
+            // Extract the sqlId (assuming it's the second number)
+            String sqlIdString = insideParentheses.substring(firstCommaIndex + 1, secondCommaIndex).trim();
 
-            // Find the indices of commas to extract reportId and sqlId
-            int firstCommaIndex = contentBeforeSysdate.lastIndexOf(',', lastQuoteIndex);
-            int secondCommaIndex = contentBeforeSysdate.lastIndexOf(',', firstCommaIndex - 1);
+            // Extract the rest of the content (query and sysdate)
+            String restOfContent = insideParentheses.substring(secondCommaIndex + 1).trim();
 
-            if (firstCommaIndex != -1 && secondCommaIndex != -1) {
-                // Extract reportId and sqlId
-                String reportIdString = contentBeforeSysdate.substring(secondCommaIndex + 1, firstCommaIndex).trim();
-                String sqlIdString = contentBeforeSysdate.substring(firstCommaIndex + 1, lastQuoteIndex).trim();
+            // Find the index of the single quote, assuming it marks the start of the query
+            int quoteIndex = restOfContent.indexOf('\'');
 
-                // Create SqlQueryInfo and add to the list
-                try {
-                    int reportId = Integer.parseInt(reportIdString);
-                    int sqlId = Integer.parseInt(sqlIdString);
+            if (quoteIndex != -1) {
+                // Find the index of the next single quote after the initial quote
+                int endQuoteIndex = restOfContent.indexOf('\'', quoteIndex + 1);
 
-                    String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+                if (endQuoteIndex != -1) {
+                    // Extract the sqlQuery
+                    String sqlQuery = restOfContent.substring(quoteIndex + 1, endQuoteIndex);
 
-                    sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
-                } catch (NumberFormatException e) {
-                    // Handle parsing errors if needed
-                    e.printStackTrace();
+                    // Create SqlQueryInfo and add to the list
+                    try {
+                        int reportId = Integer.parseInt(reportIdString);
+                        int sqlId = Integer.parseInt(sqlIdString);
+
+                        String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+
+                        sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery));
+                    } catch (NumberFormatException e) {
+                        // Handle parsing errors if needed
+                        e.printStackTrace();
+                    }
                 }
             }
         }
