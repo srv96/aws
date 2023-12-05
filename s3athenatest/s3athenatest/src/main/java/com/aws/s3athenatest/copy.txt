@@ -1,2 +1,54 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
 
-ls -l --time=modification --reverse --human-readable --color=auto | awk 'BEGIN {print "Permissions\tLinks\tOwner\tGroup\tSize\tLast Modified\tFile Name"} {print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 " " $7 "\t" $8}'
+public class KerberosJdbcExample {
+
+    private static final String JDBC_URL = "jdbc:hive2://your-hive-server:10000/your-database";
+    private static final String JDBC_DRIVER = "org.apache.hive.jdbc.HiveDriver";
+
+    public static void main(String[] args) {
+        try {
+            // Load JDBC driver
+            Class.forName(JDBC_DRIVER);
+
+            // Set Kerberos properties
+            Properties properties = new Properties();
+            properties.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
+            properties.setProperty("java.security.auth.login.config", "/path/to/jaas.conf");
+
+            // Establish JDBC connection
+            Connection connection = DriverManager.getConnection(JDBC_URL, properties);
+
+            // Execute a query
+            String query = "SELECT * FROM your_table";
+            executeQuery(connection, query);
+
+            // Close the connection
+            connection.close();
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void executeQuery(Connection connection, String query) {
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            // Process the result set
+            while (resultSet.next()) {
+                // Retrieve data from the result set
+                String column1 = resultSet.getString("column1");
+                int column2 = resultSet.getInt("column2");
+
+                // Do something with the data
+                System.out.println("Column1: " + column1 + ", Column2: " + column2);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
