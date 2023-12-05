@@ -50,14 +50,12 @@ public class SQLReconciliation {
     }
 
     private static String findSQLFile(String sqlFolderPath, String sqlFileName) throws IOException {
-        Path folderPath = Paths.get(sqlFolderPath);
-        try (var stream = Files.walk(folderPath)) {
-            return stream
-                    .filter(path -> path.getFileName().toString().equalsIgnoreCase(sqlFileName))
-                    .findFirst()
-                    .map(Path::toString)
-                    .orElse(null);
-        }
+        try (Stream<Path> paths = Files.walk(Paths.get(folderPath))) {
+        return paths
+                .filter(path -> path.toFile().isFile() && path.toString().endsWith(fileName))
+                .findFirst()
+                .orElse(null);
+		}
     }
 
     private static String extractSQLQuery(String sqlFilePath, String reportId, String sqlId, String originalQuery) throws IOException {
