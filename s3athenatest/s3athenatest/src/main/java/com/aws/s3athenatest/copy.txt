@@ -1,81 +1,112 @@
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SQLReconciliation {
+public class SqlQueryExtractor {
 
     public static void main(String[] args) {
-        // Replace these paths with the actual paths to your CSV file and SQL folder
-        String csvFilePath = "path/to/your/csv/file.csv";
-        String sqlFolderPath = "path/to/your/sql/folder";
+        String rootFolder = "path/to/your/folder";
+        List<SqlQueryInfo> sqlQueryList = processFolder(rootFolder);
 
-        reconcileSQLQueries(csvFilePath, sqlFolderPath);
+        // Output the results to a CSV file
+        writeToCsv(sqlQueryList);
     }
 
-    private static void reconcileSQLQueries(String csvFilePath, String sqlFolderPath) {
-        try {
-            // Read CSV file
-            BufferedReader csvReader = new BufferedReader(new FileReader(csvFilePath));
-            String line;
-            while ((line = csvReader.readLine()) != null) {
-                String[] data = line.split(",");
-                if (data.length >= 4) {
-                    String reportId = data[0].trim();
-                    String sqlId = data[2].trim();
-                    String reportName = data[1].trim();
-                    String sqlQuery = data[3].trim();
+    private static List<SqlQueryInfo> processFolder(String folderPath) {
+        File rootFolder = new File(folderPath);
+        List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
 
-                    // Find SQL file in the specified folder
-                    String sqlFileName = "On-Boarding Sqls - " + reportName;
-                    String sqlFilePath = findSQLFile(sqlFolderPath, sqlFileName);
-
-                    if (sqlFilePath != null) {
-                        // Extract SQL query from the SQL file
-                        String extractedQuery = extractSQLQuery(sqlFilePath, reportId, sqlId, sqlQuery);
-
-                        // Append the extracted query to the CSV file
-                        appendExtractedQueryToCSV(csvFilePath, reportId, sqlId, sqlQuery, extractedQuery);
-                    } else {
-                        System.out.println("SQL file not found for report: " + reportName);
-                    }
+        if (rootFolder.isDirectory()) {
+            for (File file : rootFolder.listFiles()) {
+                if (file.isFile() && file.getName().startsWith("On-Boarding Sqls - ") && file.getName().endsWith(".sql")) {
+                    List<SqlQueryInfo> queries = extractQueriesFromFile(file);
+                    sqlQueryList.addAll(queries);
+                } else if (file.isDirectory()) {
+                    List<SqlQueryInfo> queries = processFolder(file.getAbsolutePath());
+                    sqlQueryList.addAll(queries);
                 }
             }
-            csvReader.close();
+        }
+
+        return sqlQueryList;
+    }
+
+    private static List<SqlQueryInfo> extractQueriesFromFile(File file) {
+        List<SqlQueryInfo> sqlQueryList = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineCount = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineCount++;
+
+                // Define your pattern for the SQL query
+                Pattern pattern = Pattern.compile("insert into cs_bsp_report_query values \\( (\\d+) , (\\d+) , '([^']*)', sysdate\\)");
+                Matcher matcher = pattern.matcher(line);
+
+                while (matcher.find()) {
+                    int reportId = Integer.parseInt(matcher.group(1));
+                    int sqlId = Integer.parseInt(matcher.group(2));
+                    String sqlQuery = matcher.group(3).replace("''", "'");
+                    String fileName = file.getName().replace("On-Boarding Sqls - ", "").replace(".sql", "");
+
+                    sqlQueryList.add(new SqlQueryInfo(reportId, fileName, sqlId, sqlQuery, lineCount));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return sqlQueryList;
+    }
+
+    private static void writeToCsv(List<SqlQueryInfo> sqlQueryList) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("output.csv"))) {
+            writer.println("report_id,filename,sql_id,sql_query,line_number");
+
+            for (SqlQueryInfo query : sqlQueryList) {
+                writer.printf("%d,%s,%d,%s,%d%n", query.getReportId(), query.getFileName(), query.getSqlId(), query.getSqlQuery(), query.getLineNumber());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static String findSQLFile(String sqlFolderPath, String sqlFileName) throws IOException {
-        try (Stream<Path> paths = Files.walk(Paths.get(folderPath))) {
-        return paths
-                .filter(path -> path.toFile().isFile() && path.toString().endsWith(fileName))
-                .findFirst()
-                .orElse(null);
-		}
-    }
+    private static class SqlQueryInfo {
+        private int reportId;
+        private String fileName;
+        private int sqlId;
+        private String sqlQuery;
+        private int lineNumber;
 
-    private static String extractSQLQuery(String sqlFilePath, String reportId, String sqlId, String originalQuery) throws IOException {
-        String sqlContent = Files.readString(Paths.get(sqlFilePath));
-        String regex = "insert into cs_bsp_report_query value \\(" + reportId + ", " + sqlId + ", '(.+?)'\\)";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(sqlContent);
-        if (matcher.find()) {
-            String extractedQuery = matcher.group(1);
-            // Replace double quotes with single quotes
-            extractedQuery = extractedQuery.replace("''", "'");
-            return extractedQuery;
-        } else {
-            System.out.println("Insert query not found for report: " + reportId);
-            return originalQuery; // Return original query if not found
+        public SqlQueryInfo(int reportId, String fileName, int sqlId, String sqlQuery, int lineNumber) {
+            this.reportId = reportId;
+            this.fileName = fileName;
+            this.sqlId = sqlId;
+            this.sqlQuery = sqlQuery;
+            this.lineNumber = lineNumber;
         }
-    }
 
-    private static void appendExtractedQueryToCSV(String csvFilePath, String reportId, String sqlId, String originalQuery, String extractedQuery) throws IOException {
-        String newLine = String.format("%s,%s,%s,%s,%s%n", reportId, reportId, sqlId, originalQuery, extractedQuery);
-        Files.write(Paths.get(csvFilePath), newLine.getBytes(), java.nio.file.StandardOpenOption.APPEND);
+        public int getReportId() {
+            return reportId;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public int getSqlId() {
+            return sqlId;
+        }
+
+        public String getSqlQuery() {
+            return sqlQuery;
+        }
+
+        public int getLineNumber() {
+            return lineNumber;
+        }
     }
 }
