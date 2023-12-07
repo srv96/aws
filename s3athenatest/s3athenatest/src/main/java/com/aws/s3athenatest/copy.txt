@@ -1,43 +1,45 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 
-public class CSVProcessor {
+If you're dealing with a `SELECT` query and you want to retrieve data using `JdbcTemplate`, you can use the `query` method. Here's an example:
 
-    public static void main(String[] args) {
-        String inputFilePath = "input.csv"; // Replace with your input CSV file path
-        String outputFilePath = "output.csv"; // Replace with your desired output CSV file path
+```java
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
-        processCSV(inputFilePath, outputFilePath);
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+public class YourRepository {
+    private final JdbcTemplate jdbcTemplate;
+
+    public YourRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    private static void processCSV(String inputFilePath, String outputFilePath) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
-             FileWriter writer = new FileWriter(outputFilePath)) {
+    public List<YourEntity> getData(int parameter1, String parameter2) {
+        String sql = "SELECT * FROM your_table WHERE column1 = ? AND column2 = ?";
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 2) {
-                    parts[1] = processFileName(parts[1]);
-                }
-                writer.write(String.join(",", parts) + "\n");
-            }
-
-            System.out.println("CSV processing completed.");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return jdbcTemplate.query(
+                sql,
+                new Object[]{parameter1, parameter2},
+                new YourRowMapper()
+        );
     }
 
-    private static String processFileName(String fileName) {
-        int indexOfHyphen = fileName.indexOf("-");
-        if (indexOfHyphen != -1) {
-            return fileName.substring(indexOfHyphen + 1);
-        } else {
-            return fileName;
+    private static class YourRowMapper implements RowMapper<YourEntity> {
+        @Override
+        public YourEntity mapRow(ResultSet resultSet, int rowNum) throws SQLException {
+            // Map the result set to your entity object
+            YourEntity entity = new YourEntity();
+            entity.setColumn1(resultSet.getInt("column1"));
+            entity.setColumn2(resultSet.getString("column2"));
+            // Set other properties as needed
+            return entity;
         }
     }
 }
+```
+
+In this example, replace `"your_table"` with your actual table name, adjust the column names in the SQL query, and customize the `YourRowMapper` class to map the result set to your entity.
+
+The `query` method takes the SQL query, an array of parameters, and a `RowMapper` to convert the result set into your entity object.
