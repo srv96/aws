@@ -1,47 +1,30 @@
+public static void exportToExcel(List<Report> reports, String filePath) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Reports");
 
-If you are working with `JdbcTemplate` in Spring and want to return a `org.json.JSONArray` as the result of a `SELECT` query, you can convert the result set into a JSON array using a `RowMapper`. Here's an example:
+            // Writing the header
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Report ID");
+            headerRow.createCell(1).setCellValue("Report Name");
+            headerRow.createCell(2).setCellValue("SQL ID");
+            headerRow.createCell(3).setCellValue("SQL Query");
 
-```java
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+            // Writing data
+            int rowNum = 1;
+            for (Report report : reports) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(report.getReportId());
+                row.createCell(1).setCellValue(report.getReportName());
+                row.createCell(2).setCellValue(report.getSqlId());
+                row.createCell(3).setCellValue(report.getSqlQuery());
+            }
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
+            // Write the workbook to the file
+            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+                workbook.write(fileOut);
+            }
 
-public class YourRepository {
-    private final JdbcTemplate jdbcTemplate;
-
-    public YourRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public JSONArray getData(int parameter1, String parameter2) {
-        String sql = "SELECT * FROM your_table WHERE column1 = ? AND column2 = ?";
-
-        List<JSONObject> resultList = jdbcTemplate.query(
-                sql,
-                new Object[]{parameter1, parameter2},
-                new YourRowMapper()
-        );
-
-        return new JSONArray(resultList);
-    }
-
-    private static class YourRowMapper implements RowMapper<JSONObject> {
-        @Override
-        public JSONObject mapRow(ResultSet resultSet, int rowNum) throws SQLException {
-            // Map each row to a JSONObject
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("column1", resultSet.getInt("column1"));
-            jsonObject.put("column2", resultSet.getString("column2"));
-            // Add other columns as needed
-            return jsonObject;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
-}
-```
-
-In this example, the `getData` method returns a `JSONArray` by converting the list of `JSONObject` results obtained from the query. Adjust the SQL query, column names, and mapping logic according to your actual requirements.
