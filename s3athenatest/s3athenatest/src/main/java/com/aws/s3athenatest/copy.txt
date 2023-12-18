@@ -30,3 +30,8 @@ public class CsvToObjectExample {
         }
     }
 }
+<dependency>
+    <groupId>com.opencsv</groupId>
+    <artifactId>opencsv</artifactId>
+    <version>5.5</version> <!-- Use the latest version available -->
+</dependency>
