@@ -1,30 +1,29 @@
-public static void exportToExcel(List<Report> reports, String filePath) {
-        try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Reports");
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 
-            // Writing the header
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("Report ID");
-            headerRow.createCell(1).setCellValue("Report Name");
-            headerRow.createCell(2).setCellValue("SQL ID");
-            headerRow.createCell(3).setCellValue("SQL Query");
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.List;
 
-            // Writing data
-            int rowNum = 1;
-            for (Report report : reports) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(report.getReportId());
-                row.createCell(1).setCellValue(report.getReportName());
-                row.createCell(2).setCellValue(report.getSqlId());
-                row.createCell(3).setCellValue(report.getSqlQuery());
+public class CsvReaderExample {
+
+    public static void main(String[] args) {
+        String filePath = "path/to/your/file.csv";
+
+        try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
+            // Read all rows at once
+            List<String[]> allRows = csvReader.readAll();
+
+            // Process each row
+            for (String[] row : allRows) {
+                for (String cell : row) {
+                    System.out.print(cell + "\t");
+                }
+                System.out.println(); // Move to the next line after each row
             }
 
-            // Write the workbook to the file
-            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
-                workbook.write(fileOut);
-            }
-
-        } catch (IOException e) {
+        } catch (IOException | CsvException e) {
             e.printStackTrace();
         }
     }
+}
