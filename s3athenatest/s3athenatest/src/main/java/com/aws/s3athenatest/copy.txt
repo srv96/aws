@@ -1,28 +1,31 @@
 import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 
-public class CsvReaderExample {
+public class CsvToObjectExample {
 
     public static void main(String[] args) {
         String filePath = "path/to/your/file.csv";
 
         try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
-            // Read all rows at once
-            List<String[]> allRows = csvReader.readAll();
+            // Build CsvToBean object
+            CsvToBean<Report> csvToBean = new CsvToBeanBuilder<Report>(csvReader)
+                    .withType(Report.class)
+                    .build();
 
-            // Process each row
-            for (String[] row : allRows) {
-                for (String cell : row) {
-                    System.out.print(cell + "\t");
-                }
-                System.out.println(); // Move to the next line after each row
+            // Parse CSV into a list of Report objects
+            List<Report> reports = csvToBean.parse();
+
+            // Process each Report object
+            for (Report report : reports) {
+                System.out.println(report);
             }
 
-        } catch (IOException | CsvException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
