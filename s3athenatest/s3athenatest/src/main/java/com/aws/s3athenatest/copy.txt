@@ -1,37 +1,38 @@
-import com.opencsv.CSVReader;
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.List;
+public class DummyDataGenerator {
 
-public class CsvToObjectExample {
+    public static Map<String, HashSet<String>> createDummyMap() {
+        Map<String, HashSet<String>> dummyMap = new HashMap<>();
+
+        // Adding some dummy data to the map
+        HashSet<String> set1 = new HashSet<>();
+        set1.add("Value1A");
+        set1.add("Value1B");
+        set1.add("Value1C");
+
+        HashSet<String> set2 = new HashSet<>();
+        set2.add("Value2A");
+        set2.add("Value2B");
+
+        dummyMap.put("Key1", set1);
+        dummyMap.put("Key2", set2);
+
+        return dummyMap;
+    }
 
     public static void main(String[] args) {
-        String filePath = "path/to/your/file.csv";
+        // Example usage
+        Map<String, HashSet<String>> dummyMap = createDummyMap();
 
-        try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
-            // Build CsvToBean object
-            CsvToBean<Report> csvToBean = new CsvToBeanBuilder<Report>(csvReader)
-                    .withType(Report.class)
-                    .build();
-
-            // Parse CSV into a list of Report objects
-            List<Report> reports = csvToBean.parse();
-
-            // Process each Report object
-            for (Report report : reports) {
-                System.out.println(report);
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Print the dummy map
+        for (Map.Entry<String, HashSet<String>> entry : dummyMap.entrySet()) {
+            String key = entry.getKey();
+            HashSet<String> values = entry.getValue();
+            System.out.println("Key: " + key + ", Values: " + values);
         }
     }
 }
-<dependency>
-    <groupId>com.opencsv</groupId>
-    <artifactId>opencsv</artifactId>
-    <version>5.5</version> <!-- Use the latest version available -->
-</dependency>
+
