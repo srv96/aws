@@ -1,13 +1,11 @@
-private static Map<String, Object> mapResultSet(SqlRowSet rs) throws SQLException {
-        Map<String, Object> result = new HashMap<>();
-        ResultSetMetaData metaData = rs.getMetaData();
+private static void printSqlRowSet(SqlRowSet rs) throws SQLException {
+        SqlRowSetMetaData metaData = rs.getMetaData();
         int columnCount = metaData.getColumnCount();
 
         for (int i = 1; i <= columnCount; i++) {
             String columnName = metaData.getColumnName(i);
             Object columnValue = rs.getObject(i);
-            result.put(columnName, columnValue);
+            System.out.println(columnName + ": " + columnValue);
         }
-
-        return result;
+        System.out.println("------------");
     }
