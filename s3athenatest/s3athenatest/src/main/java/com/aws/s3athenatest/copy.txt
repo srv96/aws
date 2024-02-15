@@ -1,11 +1,32 @@
-private static void printSqlRowSet(SqlRowSet rs) throws SQLException {
-        SqlRowSetMetaData metaData = rs.getMetaData();
-        int columnCount = metaData.getColumnCount();
+import com.datadog.api.LogsApi;
+import com.datadog.api.LogsApiImpl;
+import com.datadog.api.model.CreateLogsResponse;
+import com.datadog.api.model.HTTPLogEvent;
 
-        for (int i = 1; i <= columnCount; i++) {
-            String columnName = metaData.getColumnName(i);
-            Object columnValue = rs.getObject(i);
-            System.out.println(columnName + ": " + columnValue);
+import java.util.Collections;
+
+public class DatadogLogSender {
+
+    public static void main(String[] args) {
+        // Your Datadog API and APP keys
+        String apiKey = "YOUR_API_KEY";
+        String appKey = "YOUR_APP_KEY";
+
+        // Initialize the Datadog Logs API client
+        LogsApi logsApi = new LogsApiImpl(apiKey, appKey);
+
+        // Example log event
+        HTTPLogEvent logEvent = new HTTPLogEvent();
+        logEvent.setService("my-service");
+        logEvent.setMessage("This is a test log message");
+        logEvent.setStatus(200);
+
+        try {
+            // Send the log event to Datadog
+            CreateLogsResponse response = logsApi.createHttpLogEvents(Collections.singletonList(logEvent));
+            System.out.println("Log sent successfully. Response: " + response);
+        } catch (Exception e) {
+            System.err.println("Error sending log to Datadog: " + e.getMessage());
         }
-        System.out.println("------------");
     }
+}
