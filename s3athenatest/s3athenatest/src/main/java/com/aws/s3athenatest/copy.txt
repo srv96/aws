@@ -1,32 +1,14 @@
-import com.datadog.api.LogsApi;
-import com.datadog.api.LogsApiImpl;
-import com.datadog.api.model.CreateLogsResponse;
-import com.datadog.api.model.HTTPLogEvent;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-import java.util.Collections;
+public class MyLambdaFunction implements RequestHandler<Object, String> {
 
-public class DatadogLogSender {
+    @Override
+    public String handleRequest(Object input, Context context) {
+        context.getLogger().log("Input: " + input);
 
-    public static void main(String[] args) {
-        // Your Datadog API and APP keys
-        String apiKey = "YOUR_API_KEY";
-        String appKey = "YOUR_APP_KEY";
-
-        // Initialize the Datadog Logs API client
-        LogsApi logsApi = new LogsApiImpl(apiKey, appKey);
-
-        // Example log event
-        HTTPLogEvent logEvent = new HTTPLogEvent();
-        logEvent.setService("my-service");
-        logEvent.setMessage("This is a test log message");
-        logEvent.setStatus(200);
-
-        try {
-            // Send the log event to Datadog
-            CreateLogsResponse response = logsApi.createHttpLogEvents(Collections.singletonList(logEvent));
-            System.out.println("Log sent successfully. Response: " + response);
-        } catch (Exception e) {
-            System.err.println("Error sending log to Datadog: " + e.getMessage());
-        }
+        // Your Lambda function logic goes here
+        String output = "Hello from Lambda!";
+        return output;
     }
 }
