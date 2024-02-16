@@ -1,31 +1,21 @@
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.2.4</version>
-            <executions>
-                <execution>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>shade</goal>
-                    </goals>
-                    <configuration>
-                        <createDependencyReducedPom>false</createDependencyReducedPom>
-                        <filters>
-                            <filter>
-                                <artifact>*:*</artifact>
-                                <excludes>
-                                    <!-- Exclude any resources that you don't want to include -->
-                                    <exclude>META-INF/*.SF</exclude>
-                                    <exclude>META-INF/*.DSA</exclude>
-                                    <exclude>META-INF/*.RSA</exclude>
-                                </excludes>
-                            </filter>
-                        </filters>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
+import com.datadoghq.metrics.DogStatsd;
+
+public class Main {
+    public static void main(String[] args) {
+        // Replace these values with your actual Datadog API and APP keys
+        String apiKey = "YOUR_API_KEY";
+        String appKey = "YOUR_APP_KEY";
+
+        // Initialize DogStatsd client
+        DogStatsd statsd = new DogStatsd.Builder()
+                .apiKey(apiKey)
+                .appKey(appKey)
+                .build();
+
+        // Send a custom log message
+        statsd.event("Test log message", "This is a test log message", "success");
+
+        // Close the client
+        statsd.close();
+    }
+}
