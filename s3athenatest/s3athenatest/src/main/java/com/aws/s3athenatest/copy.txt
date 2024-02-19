@@ -1,70 +1,82 @@
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.event.S3EventNotification;
-import com.amazonaws.services.s3.model.S3Object;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+public class TransactionProcessor {
 
-public class S3EventProcessor implements RequestHandler<S3Event, String> {
+    public static JSONObject processTransactions(JSONObject inputJson) {
+        JSONObject outputJson = new JSONObject();
 
-    private final AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+        // Extract transaction batch id
+        String batchId = inputJson.optString("transaction_batch_id");
+        outputJson.put("transaction_batch_id", batchId);
 
-    @Override
-    public String handleRequest(S3Event s3Event, Context context) {
-        try {
-            // Iterate over each S3 event record
-            for (S3EventNotification.S3EventNotificationRecord record : s3Event.getRecords()) {
-                String bucketName = record.getS3().getBucket().getName();
-                String key = record.getS3().getObject().getKey();
+        JSONObject transactionSummary = new JSONObject();
 
-                // Process the S3 object
-                processS3Object(bucketName, key);
-            }
-            return "S3 event processing completed successfully.";
-        } catch (Exception e) {
-            return "Error processing S3 event: " + e.getMessage();
+        JSONArray transactions = inputJson.getJSONArray("transactions");
+
+        // Calculate currency totals
+        JSONObject currencyTotals = new JSONObject();
+        for (int i = 0; i < transactions.length(); i++) {
+            JSONObject transaction = transactions.getJSONObject(i);
+            String currency = transaction.getString("currency");
+            double amount = transaction.getDouble("amount");
+            currencyTotals.put(currency, currencyTotals.optDouble(currency) + amount);
         }
+        transactionSummary.put("currency_totals", currencyTotals);
+
+        // Count transactions per merchant
+        JSONObject merchantTransactionCounts = new JSONObject();
+        for (int i = 0; i < transactions.length(); i++) {
+            JSONObject transaction = transactions.getJSONObject(i);
+            String merchant = transaction.getString("merchant");
+            merchantTransactionCounts.put(merchant, merchantTransactionCounts.optInt(merchant) + 1);
+        }
+        transactionSummary.put("merchant_transaction_counts", merchantTransactionCounts);
+
+        // Group transactions by customer ID
+        JSONObject transactionsPerCustomer = new JSONObject();
+        for (int i = 0; i < transactions.length(); i++) {
+            JSONObject transaction = transactions.getJSONObject(i);
+            String customerId = transaction.getString("customer_id");
+            String transactionId = transaction.getString("transaction_id");
+            JSONArray customerTransactions = transactionsPerCustomer.optJSONArray(customerId);
+            if (customerTransactions == null) {
+                customerTransactions = new JSONArray();
+            }
+            customerTransactions.put(transactionId);
+            transactionsPerCustomer.put(customerId, customerTransactions);
+        }
+        transactionSummary.put("transactions_per_customer", transactionsPerCustomer);
+
+        // Find the highest transaction amount
+        JSONObject highestTransaction = new JSONObject();
+        double highestAmount = Double.MIN_VALUE;
+        String highestTransactionId = "";
+        for (int i = 0; i < transactions.length(); i++) {
+            JSONObject transaction = transactions.getJSONObject(i);
+            double amount = transaction.getDouble("amount");
+            if (amount > highestAmount) {
+                highestAmount = amount;
+                highestTransactionId = transaction.getString("transaction_id");
+                highestTransaction.put("transaction_id", highestTransactionId);
+                highestTransaction.put("amount", highestAmount);
+                highestTransaction.put("currency", transaction.getString("currency"));
+                highestTransaction.put("merchant", transaction.getString("merchant"));
+                highestTransaction.put("customer_id", transaction.getString("customer_id"));
+            }
+        }
+        transactionSummary.put("highest_transaction_amount", highestTransaction);
+
+        outputJson.put("transaction_summary", transactionSummary);
+
+        return outputJson;
     }
 
-    private void processS3Object(String bucketName, String key) throws IOException {
-        S3Object s3Object = s3Client.getObject(bucketName, key);
-        InputStream inputStream = s3Object.getObjectContent();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            // Process each line of the S3 object content
-            System.out.println("Line: " + line);
-        }
-
-        // Close resources
-        reader.close();
-        inputStream.close();
+    public static void main(String[] args) {
+        // Example usage
+        JSONObject inputJson = new JSONObject(/* Your input JSON as string */);
+        JSONObject outputJson = processTransactions(inputJson);
+        System.out.println(outputJson.toString(4)); // Print output JSON with indentation
     }
 }
 
-
-
-<dependencies>
-    <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-lambda-java-core</artifactId>
-        <version>1.2.1</version>
-    </dependency>
-    <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-lambda-java-events</artifactId>
-        <version>3.6.0</version>
-    </dependency>
-    <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-s3</artifactId>
-        <version>1.12.121</version>
-    </dependency>
-</dependencies>
