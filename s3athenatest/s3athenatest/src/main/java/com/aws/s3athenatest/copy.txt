@@ -1,82 +1,79 @@
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-public class TransactionProcessor {
-
-    public static JSONObject processTransactions(JSONObject inputJson) {
-        JSONObject outputJson = new JSONObject();
-
-        // Extract transaction batch id
-        String batchId = inputJson.optString("transaction_batch_id");
-        outputJson.put("transaction_batch_id", batchId);
-
-        JSONObject transactionSummary = new JSONObject();
-
-        JSONArray transactions = inputJson.getJSONArray("transactions");
-
-        // Calculate currency totals
-        JSONObject currencyTotals = new JSONObject();
-        for (int i = 0; i < transactions.length(); i++) {
-            JSONObject transaction = transactions.getJSONObject(i);
-            String currency = transaction.getString("currency");
-            double amount = transaction.getDouble("amount");
-            currencyTotals.put(currency, currencyTotals.optDouble(currency) + amount);
-        }
-        transactionSummary.put("currency_totals", currencyTotals);
-
-        // Count transactions per merchant
-        JSONObject merchantTransactionCounts = new JSONObject();
-        for (int i = 0; i < transactions.length(); i++) {
-            JSONObject transaction = transactions.getJSONObject(i);
-            String merchant = transaction.getString("merchant");
-            merchantTransactionCounts.put(merchant, merchantTransactionCounts.optInt(merchant) + 1);
-        }
-        transactionSummary.put("merchant_transaction_counts", merchantTransactionCounts);
-
-        // Group transactions by customer ID
-        JSONObject transactionsPerCustomer = new JSONObject();
-        for (int i = 0; i < transactions.length(); i++) {
-            JSONObject transaction = transactions.getJSONObject(i);
-            String customerId = transaction.getString("customer_id");
-            String transactionId = transaction.getString("transaction_id");
-            JSONArray customerTransactions = transactionsPerCustomer.optJSONArray(customerId);
-            if (customerTransactions == null) {
-                customerTransactions = new JSONArray();
-            }
-            customerTransactions.put(transactionId);
-            transactionsPerCustomer.put(customerId, customerTransactions);
-        }
-        transactionSummary.put("transactions_per_customer", transactionsPerCustomer);
-
-        // Find the highest transaction amount
-        JSONObject highestTransaction = new JSONObject();
-        double highestAmount = Double.MIN_VALUE;
-        String highestTransactionId = "";
-        for (int i = 0; i < transactions.length(); i++) {
-            JSONObject transaction = transactions.getJSONObject(i);
-            double amount = transaction.getDouble("amount");
-            if (amount > highestAmount) {
-                highestAmount = amount;
-                highestTransactionId = transaction.getString("transaction_id");
-                highestTransaction.put("transaction_id", highestTransactionId);
-                highestTransaction.put("amount", highestAmount);
-                highestTransaction.put("currency", transaction.getString("currency"));
-                highestTransaction.put("merchant", transaction.getString("merchant"));
-                highestTransaction.put("customer_id", transaction.getString("customer_id"));
-            }
-        }
-        transactionSummary.put("highest_transaction_amount", highestTransaction);
-
-        outputJson.put("transaction_summary", transactionSummary);
-
-        return outputJson;
+{
+  "transaction_batch_id": "BATCH002",
+  "transactions": [
+    {
+      "transaction_id": "TXN001",
+      "timestamp": "2024-02-19T08:30:00",
+      "amount": 100.00,
+      "currency": "USD",
+      "merchant": "Online Store A",
+      "customer_id": "CUST001"
+    },
+    {
+      "transaction_id": "TXN002",
+      "timestamp": "2024-02-19T12:45:00",
+      "amount": 55.75,
+      "currency": "EUR",
+      "merchant": "Retail Store B",
+      "customer_id": "CUST002"
+    },
+    {
+      "transaction_id": "TXN003",
+      "timestamp": "2024-02-19T15:20:00",
+      "amount": 200.50,
+      "currency": "GBP",
+      "merchant": "Restaurant C",
+      "customer_id": "CUST003"
+    },
+    {
+      "transaction_id": "TXN004",
+      "timestamp": "2024-02-20T09:10:00",
+      "amount": 75.25,
+      "currency": "USD",
+      "merchant": "Online Store A",
+      "customer_id": "CUST001"
+    },
+    {
+      "transaction_id": "TXN005",
+      "timestamp": "2024-02-20T14:30:00",
+      "amount": 120.90,
+      "currency": "EUR",
+      "merchant": "Retail Store B",
+      "customer_id": "CUST002"
+    },
+    {
+      "transaction_id": "TXN006",
+      "timestamp": "2024-02-20T17:45:00",
+      "amount": 300.75,
+      "currency": "GBP",
+      "merchant": "Restaurant C",
+      "customer_id": "CUST003"
+    },
+    {
+      "transaction_id": "TXN007",
+      "timestamp": "2024-02-21T10:20:00",
+      "amount": 85.50,
+      "currency": "USD",
+      "merchant": "Online Store A",
+      "customer_id": "CUST001"
+    },
+    {
+      "transaction_id": "TXN008",
+      "timestamp": "2024-02-21T13:15:00",
+      "amount": 45.25,
+      "currency": "EUR",
+      "merchant": "Retail Store B",
+      "customer_id": "CUST002"
+    },
+    {
+      "transaction_id": "TXN009",
+      "timestamp": "2024-02-21T18:30:00",
+      "amount": 180.00,
+      "currency": "GBP",
+      "merchant": "Restaurant C",
+      "customer_id": "CUST003"
     }
-
-    public static void main(String[] args) {
-        // Example usage
-        JSONObject inputJson = new JSONObject(/* Your input JSON as string */);
-        JSONObject outputJson = processTransactions(inputJson);
-        System.out.println(outputJson.toString(4)); // Print output JSON with indentation
-    }
+    /* Add more transactions as needed */
+  ]
 }
-
