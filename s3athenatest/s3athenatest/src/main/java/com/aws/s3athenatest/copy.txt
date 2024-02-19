@@ -1,21 +1,70 @@
-import com.datadoghq.metrics.DogStatsd;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.S3Event;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.event.S3EventNotification;
+import com.amazonaws.services.s3.model.S3Object;
 
-public class Main {
-    public static void main(String[] args) {
-        // Replace these values with your actual Datadog API and APP keys
-        String apiKey = "YOUR_API_KEY";
-        String appKey = "YOUR_APP_KEY";
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
-        // Initialize DogStatsd client
-        DogStatsd statsd = new DogStatsd.Builder()
-                .apiKey(apiKey)
-                .appKey(appKey)
-                .build();
+public class S3EventProcessor implements RequestHandler<S3Event, String> {
 
-        // Send a custom log message
-        statsd.event("Test log message", "This is a test log message", "success");
+    private final AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
 
-        // Close the client
-        statsd.close();
+    @Override
+    public String handleRequest(S3Event s3Event, Context context) {
+        try {
+            // Iterate over each S3 event record
+            for (S3EventNotification.S3EventNotificationRecord record : s3Event.getRecords()) {
+                String bucketName = record.getS3().getBucket().getName();
+                String key = record.getS3().getObject().getKey();
+
+                // Process the S3 object
+                processS3Object(bucketName, key);
+            }
+            return "S3 event processing completed successfully.";
+        } catch (Exception e) {
+            return "Error processing S3 event: " + e.getMessage();
+        }
+    }
+
+    private void processS3Object(String bucketName, String key) throws IOException {
+        S3Object s3Object = s3Client.getObject(bucketName, key);
+        InputStream inputStream = s3Object.getObjectContent();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            // Process each line of the S3 object content
+            System.out.println("Line: " + line);
+        }
+
+        // Close resources
+        reader.close();
+        inputStream.close();
     }
 }
+
+
+
+<dependencies>
+    <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-lambda-java-core</artifactId>
+        <version>1.2.1</version>
+    </dependency>
+    <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-lambda-java-events</artifactId>
+        <version>3.6.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-s3</artifactId>
+        <version>1.12.121</version>
+    </dependency>
+</dependencies>
