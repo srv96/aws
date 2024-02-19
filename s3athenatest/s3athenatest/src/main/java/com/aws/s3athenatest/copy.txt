@@ -1,78 +1,23 @@
-{
-  "transaction_batch_id": "BATCH003",
-  "transactions": [
-    {
-      "transaction_id": "TXN010",
-      "timestamp": "2024-02-22T08:30:00",
-      "amount": 150.00,
-      "currency": "USD",
-      "merchant": "Online Store A",
-      "customer_id": "CUST001"
-    },
-    {
-      "transaction_id": "TXN011",
-      "timestamp": "2024-02-22T12:45:00",
-      "amount": 65.75,
-      "currency": "EUR",
-      "merchant": "Retail Store B",
-      "customer_id": "CUST002"
-    },
-    {
-      "transaction_id": "TXN012",
-      "timestamp": "2024-02-22T15:20:00",
-      "amount": 220.50,
-      "currency": "GBP",
-      "merchant": "Restaurant C",
-      "customer_id": "CUST003"
-    },
-    {
-      "transaction_id": "TXN013",
-      "timestamp": "2024-02-23T09:10:00",
-      "amount": 90.25,
-      "currency": "USD",
-      "merchant": "Online Store A",
-      "customer_id": "CUST001"
-    },
-    {
-      "transaction_id": "TXN014",
-      "timestamp": "2024-02-23T14:30:00",
-      "amount": 135.90,
-      "currency": "EUR",
-      "merchant": "Retail Store B",
-      "customer_id": "CUST002"
-    },
-    {
-      "transaction_id": "TXN015",
-      "timestamp": "2024-02-23T17:45:00",
-      "amount": 260.75,
-      "currency": "GBP",
-      "merchant": "Restaurant C",
-      "customer_id": "CUST003"
-    },
-    {
-      "transaction_id": "TXN016",
-      "timestamp": "2024-02-24T10:20:00",
-      "amount": 95.50,
-      "currency": "USD",
-      "merchant": "Online Store A",
-      "customer_id": "CUST001"
-    },
-    {
-      "transaction_id": "TXN017",
-      "timestamp": "2024-02-24T13:15:00",
-      "amount": 55.25,
-      "currency": "EUR",
-      "merchant": "Retail Store B",
-      "customer_id": "CUST002"
-    },
-    {
-      "transaction_id": "TXN018",
-      "timestamp": "2024-02-24T18:30:00",
-      "amount": 190.00,
-      "currency": "GBP",
-      "merchant": "Restaurant C",
-      "customer_id": "CUST003"
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+public class JsonFileToString {
+
+    public static String jsonFileToString(String filePath) throws IOException {
+        byte[] bytes = Files.readAllBytes(Paths.get(filePath));
+        return new String(bytes, StandardCharsets.UTF_8);
     }
-    /* Add more transactions as needed */
-  ]
+
+    public static void main(String[] args) {
+        try {
+            String filePath = "path/to/your/json/file.json";
+            String jsonContent = jsonFileToString(filePath);
+            System.out.println(jsonContent);
+        } catch (IOException e) {
+            System.err.println("Error reading JSON file: " + e.getMessage());
+        }
+    }
 }
