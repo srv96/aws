@@ -1,30 +1,29 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jsonschema2pojo.DefaultGenerationConfig;
+import org.jsonschema2pojo.GenerationConfig;
+import org.jsonschema2pojo.Jsonschema2Pojo;
+import org.jsonschema2pojo.SchemaMapper;
 import java.io.File;
 import java.io.IOException;
 
-public class JsonSchemaExample {
+public class JsonSchemaToPojoExample {
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
+        // Specify the input JSON schema file and the output directory for generated Java classes
+        File inputJsonSchema = new File("schema.json");
+        File outputDirectory = new File("generated");
+
+        // Configure the generation options
+        GenerationConfig config = new DefaultGenerationConfig();
+
+        // Create a SchemaMapper instance
+        SchemaMapper mapper = new SchemaMapper(config, new Jsonschema2Pojo());
 
         try {
-            // Generate Java classes from JSON schema
-            File outputDirectory = new File("generated");
-            org.jsonschema2pojo.cli.Jsonschema2Pojo cmd = new org.jsonschema2pojo.cli.Jsonschema2Pojo();
-            cmd.run(new String[]{"-s", "schema.json", "-t", outputDirectory.getPath()});
-
-            // Deserialize JSON to Java object
-            File jsonFile = new File("data.json");
-            MyClass obj = mapper.readValue(jsonFile, MyClass.class);
-            System.out.println("Deserialized object: " + obj);
-
-            // Serialize Java object to JSON
-            MyClass newObj = new MyClass();
-            newObj.setName("John");
-            newObj.setAge(30);
-            mapper.writeValue(new File("output.json"), newObj);
-            System.out.println("Serialized object: " + newObj);
+            // Generate Java classes from the JSON schema
+            mapper.generate(inputJsonSchema, outputDirectory);
+            System.out.println("Java classes generated successfully.");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 }
+
