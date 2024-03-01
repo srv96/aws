@@ -1,23 +1,30 @@
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
-public class JsonFileToString {
-
-    public static String jsonFileToString(String filePath) throws IOException {
-        byte[] bytes = Files.readAllBytes(Paths.get(filePath));
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
-
+public class JsonSchemaExample {
     public static void main(String[] args) {
+        ObjectMapper mapper = new ObjectMapper();
+
         try {
-            String filePath = "path/to/your/json/file.json";
-            String jsonContent = jsonFileToString(filePath);
-            System.out.println(jsonContent);
+            // Generate Java classes from JSON schema
+            File outputDirectory = new File("generated");
+            org.jsonschema2pojo.cli.Jsonschema2Pojo cmd = new org.jsonschema2pojo.cli.Jsonschema2Pojo();
+            cmd.run(new String[]{"-s", "schema.json", "-t", outputDirectory.getPath()});
+
+            // Deserialize JSON to Java object
+            File jsonFile = new File("data.json");
+            MyClass obj = mapper.readValue(jsonFile, MyClass.class);
+            System.out.println("Deserialized object: " + obj);
+
+            // Serialize Java object to JSON
+            MyClass newObj = new MyClass();
+            newObj.setName("John");
+            newObj.setAge(30);
+            mapper.writeValue(new File("output.json"), newObj);
+            System.out.println("Serialized object: " + newObj);
         } catch (IOException e) {
-            System.err.println("Error reading JSON file: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
