@@ -14,7 +14,7 @@ public class Main {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                line = processLine(line);
+                line = processColumnName(line);
                 writer.write(line);
                 writer.newLine();
             }
@@ -25,23 +25,30 @@ public class Main {
         }
     }
 
-    private static String processLine(String line) {
+    private static String processColumnName(String columnName) {
         StringBuilder result = new StringBuilder();
+        result.append("@Column(name = \"").append(columnName).append("\")\n");
+        result.append("String ").append(convertToCamelCase(columnName)).append(";");
+        return result.toString();
+    }
 
+    private static String convertToCamelCase(String columnName) {
+        StringBuilder camelCase = new StringBuilder();
         boolean capitalizeNext = false;
-        for (char c : line.toCharArray()) {
+
+        for (char c : columnName.toCharArray()) {
             if (c == '_') {
                 capitalizeNext = true;
             } else {
                 if (capitalizeNext) {
-                    result.append(Character.toUpperCase(c));
+                    camelCase.append(Character.toUpperCase(c));
                     capitalizeNext = false;
                 } else {
-                    result.append(c);
+                    camelCase.append(Character.toLowerCase(c));
                 }
             }
         }
 
-        return result.toString();
+        return camelCase.toString();
     }
 }
