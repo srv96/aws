@@ -1,54 +1,34 @@
+
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {
-        String inputFileName = "input.txt"; // Change this to your input file name
-        String outputFileName = "output.txt"; // Change this to your output file name
+        String inputFileName = "input.txt";
+        String outputFileName = "output.txt";
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(outputFileName))) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
+            FileWriter writer = new FileWriter(outputFileName);
+
+            String className = reader.readLine();
+            writer.write(className + " " + className.substring(0, 1).toLowerCase() + className.substring(1) + " = new " + className.substring(0, 1).toLowerCase() + className.substring(1) + "();\n");
 
             String line;
             while ((line = reader.readLine()) != null) {
-                line = processColumnName(line);
-                writer.write(line);
-                writer.newLine();
+                String attributeName = line.toLowerCase().replace('_', ' ');
+                String methodName = "set" + attributeName.substring(0, 1).toUpperCase() + attributeName.substring(1);
+                writer.write(className.substring(0, 1).toLowerCase() + className.substring(1) + "." + methodName + "();\n");
             }
-            System.out.println("File processing complete.");
 
+            reader.close();
+            writer.close();
+
+            System.out.println("Output has been written to " + outputFileName);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private static String processColumnName(String columnName) {
-        StringBuilder result = new StringBuilder();
-        result.append("@Column(name = \"").append(columnName).append("\")\n");
-        result.append("String ").append(convertToCamelCase(columnName)).append(";");
-        return result.toString();
-    }
-
-    private static String convertToCamelCase(String columnName) {
-        StringBuilder camelCase = new StringBuilder();
-        boolean capitalizeNext = false;
-
-        for (char c : columnName.toCharArray()) {
-            if (c == '_') {
-                capitalizeNext = true;
-            } else {
-                if (capitalizeNext) {
-                    camelCase.append(Character.toUpperCase(c));
-                    capitalizeNext = false;
-                } else {
-                    camelCase.append(Character.toLowerCase(c));
-                }
-            }
-        }
-
-        return camelCase.toString();
     }
 }
