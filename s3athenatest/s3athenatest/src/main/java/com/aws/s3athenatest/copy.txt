@@ -1,32 +1,45 @@
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class Main {
+public class AttributeConverter {
     public static void main(String[] args) {
-        String inputFileName = "input.txt";
-        String outputFileName = "output.txt";
+        String inputFile = "input.txt";
+        String outputFile = "output.txt";
 
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
-            FileWriter writer = new FileWriter(outputFileName);
-
-            String className = reader.readLine();
-            writer.write(className + " " + className.substring(0, 1).toLowerCase() + className.substring(1) + " = new " + className.substring(0, 1).toLowerCase() + className.substring(1) + "();\n");
+            BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+            FileWriter writer = new FileWriter(outputFile);
 
             String line;
+            boolean isFirstLine = true;
+
             while ((line = reader.readLine()) != null) {
-                String attributeName = line.toLowerCase().replace('_', ' ');
-                String methodName = "set" + attributeName.substring(0, 1).toUpperCase() + attributeName.substring(1);
-                writer.write(className.substring(0, 1).toLowerCase() + className.substring(1) + "." + methodName + "();\n");
+                String[] tokens = line.split("_");
+                StringBuilder attributeName = new StringBuilder();
+                
+                for (String token : tokens) {
+                    if (!token.isEmpty()) {
+                        attributeName.append(Character.toUpperCase(token.charAt(0)));
+                        if (token.length() > 1) {
+                            attributeName.append(token.substring(1).toLowerCase());
+                        }
+                    }
+                }
+
+                if (isFirstLine) {
+                    writer.write(attributeName.toString() + " " + Character.toLowerCase(attributeName.charAt(0)) + attributeName.substring(1) + " = new " + attributeName.toString() + "();\n");
+                    isFirstLine = false;
+                } else {
+                    writer.write(Character.toLowerCase(attributeName.charAt(0)) + attributeName.substring(1) + ".set" + attributeName + "();\n");
+                }
             }
 
             reader.close();
             writer.close();
 
-            System.out.println("Output has been written to " + outputFileName);
+            System.out.println("Conversion completed successfully.");
         } catch (IOException e) {
             e.printStackTrace();
         }
