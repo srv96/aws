@@ -1,38 +1,88 @@
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class AttributeConverter {
+public class TestClassGenerator {
 
     public static void main(String[] args) {
-        String inputFileName = "input.txt";
-        String outputFileName = "output.txt";
-
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
-            FileWriter writer = new FileWriter(outputFileName);
-
-            String className = reader.readLine().trim();
-            String objectName = className.substring(0, 1).toLowerCase() + className.substring(1);
-
-            writer.write(className + " " + objectName + " = new " + className + "();\n");
-
+        // Replace "YourPOJOClass.java" with the path to your POJO class file
+        String pojoFilePath = "YourPOJOClass.java";
+        
+        // Read the content of the POJO class file
+        String pojoContent = readFile(pojoFilePath);
+        
+        // Generate test class content based on the POJO class content
+        String testClassContent = generateTestClass(pojoContent);
+        
+        // Write the generated test class content to a new file
+        String testClassFilePath = "TestClass.java";
+        writeFile(testClassFilePath, testClassContent);
+        
+        System.out.println("Test class generated successfully!");
+    }
+    
+    private static String readFile(String filePath) {
+        StringBuilder content = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.trim().split("\\.");
-                if (parts.length == 2) {
-                    String attributeName = parts[1].replaceAll("_", "");
-                    String methodName = "set" + attributeName.substring(0, 1).toUpperCase() + attributeName.substring(1);
-                    writer.write(objectName + "." + methodName + "();\n");
-                }
+                content.append(line).append("\n");
             }
-
-            reader.close();
-            writer.close();
-
-            System.out.println("Conversion completed. Check output.txt");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return content.toString();
+    }
+    
+    private static String generateTestClass(String pojoContent) {
+        // Modify this method to generate test class content based on the POJO class content
+        
+        StringBuilder testClass = new StringBuilder();
+        
+        // Add import statements
+        testClass.append("import org.junit.Test;\n");
+        testClass.append("import static org.junit.Assert.assertEquals;\n\n");
+        
+        // Generate test class header
+        testClass.append("public class TestClass {\n\n");
+        
+        // Generate test method to initialize the POJO class and assert each variable
+        testClass.append("\t@Test\n");
+        testClass.append("\tpublic void testGetterSetter() {\n");
+        testClass.append("\t\t// Create an instance of the POJO class\n");
+        testClass.append("\t\tYourPOJOClass pojo = new YourPOJOClass();\n");
+        
+        // Parse the POJO class content to get variable names
+        String[] lines = pojoContent.split("\n");
+        for (String line : lines) {
+            if (line.trim().startsWith("private")) {
+                // Extract variable name from the line
+                String[] parts = line.trim().split("\\s+");
+                String variableName = parts[2].substring(0, parts[2].indexOf(";"));
+                
+                // Add assertions for getter and setter of each variable
+                testClass.append("\t\t// Test ").append(variableName).append(" getter and setter\n");
+                testClass.append("\t\tString ").append(variableName).append("Value = \"testValue\";\n");
+                testClass.append("\t\tpojo.set").append(variableName.substring(0, 1).toUpperCase()).append(variableName.substring(1))
+                        .append("(").append(variableName).append("Value);\n");
+                testClass.append("\t\tassertEquals(").append(variableName).append("Value, pojo.get")
+                        .append(variableName.substring(0, 1).toUpperCase()).append(variableName.substring(1)).append("());\n");
+            }
+        }
+        
+        // Generate test class footer
+        testClass.append("\t}\n");
+        testClass.append("}\n");
+        
+        return testClass.toString();
+    }
+    
+    private static void writeFile(String filePath, String content) {
+        try (FileWriter writer = new FileWriter(new File(filePath))) {
+            writer.write(content);
         } catch (IOException e) {
             e.printStackTrace();
         }
